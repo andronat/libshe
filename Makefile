@@ -11,6 +11,7 @@ TESTSTARGET := $(BUILDDIR)/tests
 
 SOURCES := $(SRCDIR)/she.cpp
 OBJECTS := $(BUILDDIR)/she.o
+TESTOBJECTS := $(BUILDDIR)/test.o
 CPPTESTS := test/test_libshe.cpp
 
 
@@ -28,10 +29,13 @@ clean:
 	@echo "Cleaning..."
 	$(RM) -r $(BUILDDIR)
 
-test: $(CPPTESTS) $(OBJECTS)
-	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) $(LIB) $^ -o $(BUILDDIR)/tests
+test: $(TESTOBJECTS) $(OBJECTS)
+	$(CC) $(CFLAGS) $(INC) $(LIB) $^ -o $(BUILDDIR)/tests
 	@$(TESTSTARGET)
+
+$(TESTOBJECTS): $(CPPTESTS)
+	@mkdir -p $(BUILDDIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 nosetests: $(LIBTARGET)
 	@nosetests .
