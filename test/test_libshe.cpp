@@ -1,7 +1,8 @@
+extern "C" {
+    #include "../include/she.h"
+}
 
 #include <iostream>
-
-#include "../include/she.h"
 
 using namespace std;
 
