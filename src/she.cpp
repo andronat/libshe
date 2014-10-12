@@ -249,7 +249,7 @@ she_xor(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 }
 
 she_ciphertext_t *
-she_xor(she_public_key_t* pk, she_ciphertext_t* a, bool* b, unsigned int n)
+she_xor1(she_public_key_t* pk, she_ciphertext_t* a, bool* b, unsigned int n)
 {
     // Homomorphically XOR ciphertext and plaintext
     // input:
