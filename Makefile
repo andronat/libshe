@@ -1,4 +1,4 @@
-CC          := clang++
+CXX         := clang++
 CFLAGS      := -g -Wall -fPIC --std=c++11
 LIB         := -lgmp
 INC         := -Iinclude
@@ -19,23 +19,23 @@ all: $(LIBTARGET)
 
 $(LIBTARGET): $(OBJECTS)
 	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) $(INC) $^ -shared  $(LIB) -o $(LIBTARGET)
+	$(CXX) $(CFLAGS) $(INC) $^ -shared  $(LIB) -o $(LIBTARGET)
 
 $(OBJECTS): $(SOURCES)
 	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) -c -o $@ $<
 
 clean:
 	@echo "Cleaning..."
 	$(RM) -r $(BUILDDIR)
 
 test: $(TESTOBJECTS) $(OBJECTS)
-	$(CC) $(CFLAGS) $(INC) $(LIB) $^ -o $(BUILDDIR)/tests
+	$(CXX) $(CFLAGS) $(INC) $(LIB) $^ -o $(BUILDDIR)/tests
 	@$(TESTSTARGET)
 
 $(TESTOBJECTS): $(CPPTESTS)
 	@mkdir -p $(BUILDDIR)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) -c -o $@ $<
 
 nosetests: $(LIBTARGET)
 	@nosetests .
