@@ -1,5 +1,6 @@
 extern "C" {
-    #include "../include/she.h"
+    #include "she.h"
+    #include "bit_array.h"
 }
 
 
@@ -53,7 +54,10 @@ struct she_private_key_t {
 
 void
 she_free_private_key(she_private_key_t* sk) {
-    delete sk;
+    if (sk) {
+        delete sk;
+    }
+    sk = 0;
 }
 
 struct she_public_key_t {
@@ -65,7 +69,10 @@ struct she_public_key_t {
 
 void
 she_free_public_key(she_public_key_t* pk) {
-    delete pk;
+    if (pk) {
+        delete pk;
+    }
+    pk = 0;
 }
 
 she_private_key_t*
@@ -75,6 +82,10 @@ she_generate_private_key(unsigned int s, unsigned int l)
     // inputs:
     //   s: security
     //   l: ciphertext length (bits)
+
+    if (s == 0 || l == 0) {
+        return nullptr;
+    }
 
     unsigned int etha = (s+3) * l;
 
@@ -106,6 +117,10 @@ she_generate_public_key(she_private_key_t* sk)
     // Generate public key
     // inputs:
     //   sk: generated private key
+
+    if (!sk) {
+        return nullptr;
+    }
 
     auto s = sk->s;
     auto l = sk->l;
@@ -145,11 +160,14 @@ struct she_ciphertext_t {
 
 void
 she_free_ciphertext(she_ciphertext_t* c) {
-    delete c;
+    if (c) {
+        delete c;
+    }
+    c = 0;
 }
 
 she_ciphertext_t*
-she_encrypt(she_public_key_t* pk, she_private_key_t* sk, bool* m, unsigned int n)
+she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
 {
     // Encrypt array of bits
     // inputs:
@@ -158,8 +176,9 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, bool* m, unsigned int n
     //   m: array or bits
     //   n: array size
 
-    assert (pk->l == sk->l);
-    assert (pk->s == sk->s);
+    if (!m || !pk || !sk || pk->l != sk->l || pk->s != sk->s) {
+        return nullptr;
+    }
 
     auto x = pk->x;
     auto p = sk->p;
@@ -167,11 +186,10 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, bool* m, unsigned int n
     auto s = sk->s;
     auto l = sk->l;
 
-    assert(n <= l);
-
-
     auto gamma = pk->gamma;
     auto res = new she_ciphertext_t();
+
+    auto n = bit_array_length(m);
 
     for (int i=0; i<n; ++i) {
         mpz_t scratch;
@@ -190,13 +208,13 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, bool* m, unsigned int n
         mpz_class r = _random_mpz(-z, z);
 
         // Encrypts m[i]
-        res->data.push_back((q*(*p) + 2*r + (int) m[i]) % (*x));
+        res->data.push_back((q*(*p) + 2*r + bit_array_get_bit(m, i)) % (*x));
     }
 
     return res;
 }
 
-bool*
+BIT_ARRAY*
 she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
 {
     // Decrypt array of bits
@@ -204,18 +222,21 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
     //   sk: private key
     //   c: ciphertext
 
+    if (!sk || !c) {
+        return nullptr;
+    }
+
     auto p = sk->p;
     auto l = sk->l;
 
     unsigned int n = c->data.size();
-    assert (n <= l);
 
-    auto res = new bool[n];
+    auto res = bit_array_create(n);
 
     for (int i=0; i<n; ++i) {
         // Decrypts c[i]
         mpz_class t = c->data[i] % (*p) % 2;
-        res[i] = !((bool) t.get_si());
+        bit_array_assign_bit(res, i, (char) !((bool) t.get_si()));
     }
 
     return res;
@@ -234,7 +255,9 @@ she_xor(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
     //   a: ciphertext
     //   b: ciphertext
 
-    assert (a->data.size() == b->data.size());
+    if (!pk || !a || !b || a->data.size() != b->data.size()) {
+        return nullptr;
+    }
 
     auto x = pk->x;
     auto l = pk->l;
@@ -248,8 +271,8 @@ she_xor(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
     return res;
 }
 
-she_ciphertext_t *
-she_xor1(she_public_key_t* pk, she_ciphertext_t* a, bool* b, unsigned int n)
+she_ciphertext_t*
+she_xor1(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b)
 {
     // Homomorphically XOR ciphertext and plaintext
     // input:
@@ -258,14 +281,16 @@ she_xor1(she_public_key_t* pk, she_ciphertext_t* a, bool* b, unsigned int n)
     //   b: bit array
     //   n: array size
 
-    assert (a->data.size() >= n);
+    bit_index_t n;
+    if (!pk || !a || !b || a->data.size() != (n = bit_array_length(b))) {
+        return nullptr;
+    }
 
     auto x = pk->x;
-    auto l = pk->l;
 
     auto res = new she_ciphertext_t();
-    for (int i=0; i<l; ++i) {
-        mpz_class t = (a->data[i] + (int) b[i]) % (*x);
+    for (int i=0; i<n; ++i) {
+        mpz_class t = (a->data[i] + bit_array_get_bit(b, i)) % (*x);
         res->data.push_back(t);
     }
 
@@ -281,14 +306,15 @@ she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
     //   a: ciphertext
     //   b: ciphertext
 
-    assert (a->data.size() == b->data.size());
+    if (a->data.size() != b->data.size()) {
+        return nullptr;
+    }
 
     auto x = pk->x;
-    auto l = pk->l;
 
     auto res = new she_ciphertext_t();
 
-    for (int i=0; i<l; ++i) {
+    for (int i=0; i<a->data.size(); ++i) {
         mpz_class t = (a->data[i] * b->data[i] + 1) % (*x);
         res->data.push_back(t);
     }
@@ -304,6 +330,10 @@ she_prod(she_public_key_t* pk, she_ciphertext_t* cs, unsigned int n)
     //   sk: private key
     //   cs: ciphertexts
     //   n: number of ciphertexts
+
+    if (!pk || !cs || n == 0) {
+        return nullptr;
+    }
 
     auto x = pk->x;
 
@@ -330,6 +360,10 @@ she_prod(she_public_key_t* pk, she_ciphertext_t* cs, unsigned int n)
 
 char*
 she_serialize_private_key(she_private_key_t *sk) {
+    if (!sk) {
+        return nullptr;
+    }
+
     stringstream ss;
     ss << sk->p->get_str(62) << '/'
        << mpz_class(sk->etha).get_str(62) << '/'
@@ -344,6 +378,10 @@ she_serialize_private_key(she_private_key_t *sk) {
 
 char*
 she_serialize_public_key(she_public_key_t *pk) {
+    if (!pk) {
+        return nullptr;
+    }
+
     stringstream ss;
     ss << pk->x->get_str(62) << '/'
        << mpz_class(pk->gamma).get_str(62) << '/'
@@ -358,6 +396,10 @@ she_serialize_public_key(she_public_key_t *pk) {
 
 char*
 she_serialize_ciphertext(she_ciphertext_t *c) {
+    if (!c) {
+        return nullptr;
+    }
+
     stringstream ss;
     for (int i=0; i < (c->data.size()); ++i) {
         ss << c->data[i].get_str(62) << '/';

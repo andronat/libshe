@@ -1,41 +1,49 @@
 CXX         := clang++
 CFLAGS      := -g -Wall -fPIC --std=c++11
+
+BITARR      := lib/BitArray
+
 LIB         := -lgmp
-INC         := -Iinclude
+INC         := -Iinclude -I$(BITARR)
 
 SRCDIR      := src
 BUILDDIR    := build
 
 LIBTARGET   := $(BUILDDIR)/libshe.so
 TESTSTARGET := $(BUILDDIR)/tests
+BITARRLIB   := $(BITARR)/libbitarr.a
 
-SOURCES := $(SRCDIR)/she.cpp
-OBJECTS := $(BUILDDIR)/she.o
+SOURCES     := $(SRCDIR)/she.cpp
+OBJECTS     := $(BUILDDIR)/she.o
+
 TESTOBJECTS := $(BUILDDIR)/test.o
-CPPTESTS := test/test_libshe.cpp
+CPPTESTS    := test/test_libshe.cpp
 
 
 all: $(LIBTARGET)
 
-$(LIBTARGET): $(OBJECTS)
+$(LIBTARGET): $(OBJECTS) $(BITARRLIB)
 	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CFLAGS) $(INC) $^ -shared  $(LIB) -o $(LIBTARGET)
+	$(CXX) $(CFLAGS) $(INC) $(LIB) -shared $^ -o $(LIBTARGET)
 
 $(OBJECTS): $(SOURCES)
 	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(INC) -c $^ -o $@
+
+$(BITARRLIB):
+	$(MAKE) -C $(BITARR)
 
 clean:
 	@echo "Cleaning..."
 	$(RM) -r $(BUILDDIR)
 
-test: $(TESTOBJECTS) $(OBJECTS)
-	$(CXX) $(CFLAGS) $(INC) $(LIB) $^ -o $(BUILDDIR)/tests
+test: $(LIBTARGET) $(TESTOBJECTS)
+	$(CXX) $(CFLAGS) $(INC) $(LIB) -L$(BUILDDIR) $^ -o $(BUILDDIR)/tests
 	@$(TESTSTARGET)
 
-$(TESTOBJECTS): $(CPPTESTS)
+$(TESTOBJECTS): $(BITARRLIB) $(CPPTESTS)
 	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(INC) -c -o $@ $^
 
 nosetests: $(LIBTARGET)
 	@nosetests .
