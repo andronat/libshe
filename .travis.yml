@@ -1,6 +1,9 @@
 language: cpp
 compiler:
   - clang++
+before_install:
+    - sudo apt-get install build-essential m4 lzip unzip
+    - ./scripts/install-dependencies.sh
 script: make nosetests
 notifications:
-  email: false
+    email: false
