@@ -1,0 +1,3 @@
+[submodule "libbitarray"]
+  path = lib/BitArray
+  url = git://github.com/noporpoise/BitArray.git
