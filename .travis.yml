@@ -2,8 +2,7 @@ language: cpp
 compiler:
   - clang++
 before_install:
-    - sudo apt-get install build-essential m4 lzip unzip
-    - ./scripts/install-dependencies.sh
+    - sudo apt-get install libgmp10
 script: make nosetests
 notifications:
     email: false
