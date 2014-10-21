@@ -79,7 +79,6 @@ she_private_key_t*
 she_generate_private_key(unsigned int s, unsigned int l)
 {
     // Generate private key
-    // inputs:
     //   s: security
     //   l: ciphertext length (bits)
 
@@ -115,7 +114,6 @@ she_public_key_t*
 she_generate_public_key(she_private_key_t* sk)
 {
     // Generate public key
-    // inputs:
     //   sk: generated private key
 
     if (!sk) {
@@ -170,7 +168,6 @@ she_ciphertext_t*
 she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
 {
     // Encrypt array of bits
-    // inputs:
     //   pk: public key
     //   sk: private key
     //   m: array or bits
@@ -218,7 +215,6 @@ BIT_ARRAY*
 she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
 {
     // Decrypt array of bits
-    // input:
     //   sk: private key
     //   c: ciphertext
 
@@ -250,7 +246,6 @@ she_ciphertext_t *
 she_xor(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 {
     // Homomorphically XOR ciphertexts
-    // input:
     //   sk: private key
     //   a: ciphertext
     //   b: ciphertext
@@ -275,7 +270,6 @@ she_ciphertext_t*
 she_xor1(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b)
 {
     // Homomorphically XOR ciphertext and plaintext
-    // input:
     //   sk: private key
     //   a: ciphertext
     //   b: bit array
@@ -301,7 +295,6 @@ she_ciphertext_t*
 she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 {
     // Homomorphically AND ciphertexts
-    // inputs:
     //   sk: private key
     //   a: ciphertext
     //   b: ciphertext
@@ -326,7 +319,6 @@ she_ciphertext_t*
 she_prod(she_public_key_t* pk, she_ciphertext_t* cs, unsigned int n)
 {
     // Homomorphically computes AND product of the ciphertexts
-    // inputs:
     //   sk: private key
     //   cs: ciphertexts
     //   n: number of ciphertexts
