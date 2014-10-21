@@ -2,7 +2,10 @@ language: cpp
 compiler:
   - clang++
 before_install:
-    - sudo apt-get install libgmp10
-script: make nosetests
+  - sudo apt-get install libgmp10
+env: 
+  - CPATH=$(CPATH):/usr/include
+script:
+  - make nosetests
 notifications:
-    email: false
+  - email: false
