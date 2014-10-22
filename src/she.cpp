@@ -317,7 +317,7 @@ she_ciphertext_t*
 she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas, unsigned int n, unsigned int l)
 {
     // Homomorphically computes AND product of the sum of ciphertext `a` and
-    // plaintexts `betas`
+    // negated plaintexts `betas`
     //   pk: public key
     //   betas: number of plaintexts
     //   n: number of ciphertexts
@@ -346,7 +346,7 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas, unsigne
                 acc %= (*x);
             }
         }
-        acc = (acc + 1) % (*x);
+        acc += 1; acc %= (*x);
         (res->data).push_back(acc);
     }
 
