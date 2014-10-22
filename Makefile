@@ -43,7 +43,7 @@ test: $(LIBTARGET) $(TESTOBJECTS)
 
 $(TESTOBJECTS): $(BITARRLIB) $(CPPTESTS)
 	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CFLAGS) $(INC) -c -o $@ $^
+	$(CXX) $(CFLAGS) $(INC) -c $^ -o $@
 
 nosetests: $(LIBTARGET)
 	@nosetests .
