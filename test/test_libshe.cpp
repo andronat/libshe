@@ -110,23 +110,54 @@ int main() {
         she_free_ciphertext(d);
     }
 
-    // Product
+    // Sum-Product
     {
+        auto m = bit_array_create(8);
+
+        auto a = she_encrypt(pk, sk, m);
         auto c = she_xor(pk, a, b);
 
-        auto p = she_prod(pk, c, 1);
-        auto q = she_prod(pk, x, 1);
+        auto p = she_sumprod(pk, a, c, 1);
+        auto q = she_sumprod(pk, a, x, 1);
 
         auto z = she_decrypt(sk, p);
         auto h = she_decrypt(sk, q);
 
-        cout << "Homomorphic products:" << endl;
+        cout << "Homomorphic sum-products:" << endl;
         cout << z << endl;
         cout << h << endl << endl;
 
         she_free_ciphertext(c);
         she_free_ciphertext(p);
         she_free_ciphertext(q);
+    }
+
+    // Dot
+    {
+        auto m1 = bit_array_create(2);
+        auto m2 = bit_array_create(2);
+        bit_array_set_bit(m2, 0);
+        auto m3 = bit_array_create(2);
+        bit_array_set_bit(m3, 1);
+        auto db = bit_array_create(16);
+        bit_array_set_bits(db, 8,  0, 2, 4, 6, 9, 11, 13, 15);
+
+        auto g1 = she_encrypt(pk, sk, m1);
+        auto g2 = she_encrypt(pk, sk, m2);
+        auto g3 = she_encrypt(pk, sk, m3);
+
+        auto p = she_dot(pk, g1, db, 2, 8);
+        auto q = she_dot(pk, g2, db, 2, 8);
+        auto r = she_dot(pk, g3, db, 2, 8);
+
+        auto z = she_decrypt(sk, p);
+        auto h = she_decrypt(sk, q);
+        auto u = she_decrypt(sk, r);
+
+        cout << "Homomorphic dot:" << endl;
+        cout << z << endl;
+        cout << h << endl;
+        cout << u << endl;
     }
 
     // Destructors

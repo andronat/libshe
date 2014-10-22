@@ -181,7 +181,6 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
     auto p = sk->p;
 
     auto s = sk->s;
-    auto l = sk->l;
 
     auto gamma = pk->gamma;
     auto res = new she_ciphertext_t();
@@ -223,7 +222,6 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
     }
 
     auto p = sk->p;
-    auto l = sk->l;
 
     unsigned int n = c->data.size();
 
@@ -316,14 +314,15 @@ she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 }
 
 she_ciphertext_t*
-she_prod(she_public_key_t* pk, she_ciphertext_t* cs, unsigned int n)
+she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* cs, unsigned int n)
 {
-    // Homomorphically computes AND product of the ciphertexts
-    //   sk: private key
+    // Homomorphically computes AND product of the sum of ciphertext `a` and
+    // ciphertexts `cs`
+    //   pk: public key
     //   cs: ciphertexts
     //   n: number of ciphertexts
 
-    if (!pk || !cs || n == 0) {
+    if (!pk || !a || !cs || n == 0) {
         return nullptr;
     }
 
@@ -337,10 +336,61 @@ she_prod(she_public_key_t* pk, she_ciphertext_t* cs, unsigned int n)
             if (cs[k].data[i] == 0) {
                 break;
             }
-            acc *= cs[k].data[i] % (*x);
+            acc *= (a->data[i] + cs[k].data[i]);
+
+            // TODO: Optimize this. 3 was picked randomly in order for
+            // mod division to not be performed every time, since division is
+            // expensive...
+            // ...but so is operations on larger numbers
+            if (i % 3 == 0) {
+                acc %= (*x);
+            }
         }
         acc = (acc + 1) % (*x);
         (res->data).push_back(acc);
+    }
+
+    return res;
+}
+
+she_ciphertext_t*
+she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_ARRAY* b,
+    unsigned int n, unsigned int m)
+{
+    // Dot product of `g` and each column of `b` matrix
+    //   pk: public key
+    //   g: ciphertext
+    //   b: bit matrix
+    //   n: number of rows
+    //   m: number of columns
+
+    if (!pk || !g || !b || n == 0 || m == 0 || bit_array_length(b) != n*m) {
+        return nullptr;
+    }
+
+    auto x = pk->x;
+
+    auto res = new she_ciphertext_t();
+
+    for (int j=0; j<m; ++j) {
+        mpz_class acc = 0;
+        int c = 0;
+        for (int i=0; i<n; ++i) {
+            auto bit = bit_array_get_bit(b, i*m + j);
+            if (bit) {
+                acc += g->data[i];
+                ++c;
+                // TODO: Optimize this. 5 was picked randomly in order for
+                // mod division to not be performed every time, since division is
+                // expensive...
+                // ...but so is operations on larger numbers
+                if (c % 5 == 0) {
+                    acc %= (*x);
+                }
+            }
+        }
+        acc %= (*x);
+        res->data.push_back(acc);
     }
 
     return res;
@@ -357,9 +407,9 @@ she_serialize_private_key(she_private_key_t *sk) {
     }
 
     stringstream ss;
-    ss << sk->p->get_str(62) << '/'
-       << mpz_class(sk->etha).get_str(62) << '/'
-       << mpz_class(sk->s).get_str(62) << '/'
+    ss << sk->p->get_str(62) << ' '
+       << mpz_class(sk->etha).get_str(62) << ' '
+       << mpz_class(sk->s).get_str(62) << ' '
        << mpz_class(sk->l).get_str(62);
     auto t = ss.str();
     char* res = new char[t.size() + 1];
@@ -375,9 +425,9 @@ she_serialize_public_key(she_public_key_t *pk) {
     }
 
     stringstream ss;
-    ss << pk->x->get_str(62) << '/'
-       << mpz_class(pk->gamma).get_str(62) << '/'
-       << mpz_class(pk->s).get_str(62) << '/'
+    ss << pk->x->get_str(62) << ' '
+       << mpz_class(pk->gamma).get_str(62) << ' '
+       << mpz_class(pk->s).get_str(62) << ' '
        << mpz_class(pk->l).get_str(62);
     auto t = ss.str();
     char* res = new char[t.size() + 1];
@@ -394,7 +444,7 @@ she_serialize_ciphertext(she_ciphertext_t *c) {
 
     stringstream ss;
     for (int i=0; i < (c->data.size()); ++i) {
-        ss << c->data[i].get_str(62) << '/';
+        ss << c->data[i].get_str(62) << ' ';
     }
     auto t = ss.str();
     char* res = new char[t.size() + 1];
