@@ -117,7 +117,7 @@ int main() {
         auto a = she_encrypt(pk, sk, m);
 
         auto x = bit_array_create(16);
-        bit_array_set_bit(x, 7);
+        bit_array_set_bits(x, 7,  0, 1, 2, 3, 4, 5, 6);
         auto y = bit_array_create(16);
         bit_array_set_all(y);
 

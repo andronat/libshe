@@ -335,7 +335,7 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas, unsigne
         mpz_class acc = 1;
         for (int j=0; j<l; ++j) {
             auto beta = bit_array_get_bit(betas, i*l + j);
-            acc *= (a->data[j] + beta);
+            acc *= (a->data[j] + beta + 1);
 
             // TODO: Optimize this. 3 was picked randomly in order for
             // mod division to not be performed every time, since division is
