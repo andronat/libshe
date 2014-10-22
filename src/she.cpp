@@ -314,15 +314,16 @@ she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 }
 
 she_ciphertext_t*
-she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* cs, unsigned int n)
+she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas, unsigned int n, unsigned int l)
 {
     // Homomorphically computes AND product of the sum of ciphertext `a` and
-    // ciphertexts `cs`
+    // plaintexts `betas`
     //   pk: public key
-    //   cs: ciphertexts
+    //   betas: number of plaintexts
     //   n: number of ciphertexts
+    //   l: size of plaintext
 
-    if (!pk || !a || !cs || n == 0) {
+    if (!pk || !a || !betas || n == 0 || bit_array_length(betas) != n*l) {
         return nullptr;
     }
 
@@ -330,18 +331,17 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* cs, uns
 
     auto res = new she_ciphertext_t();
 
-    for (int k=0; k < n; ++k) {
+    for (int i=0; i<n; ++i) {
         mpz_class acc = 1;
-        for (int i=0; i < cs[k].data.size(); ++i) {
-            if (cs[k].data[i] == 0) {
-                break;
-            }
-            acc *= (a->data[i] + cs[k].data[i]);
+        for (int j=0; j<l; ++j) {
+            auto beta = bit_array_get_bit(betas, i*l + j);
+            acc *= (a->data[j] + beta);
 
             // TODO: Optimize this. 3 was picked randomly in order for
             // mod division to not be performed every time, since division is
             // expensive...
             // ...but so is operations on larger numbers
+            // Should depend on security parameter
             if (i % 3 == 0) {
                 acc %= (*x);
             }
@@ -384,6 +384,7 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_ARRAY* b,
                 // mod division to not be performed every time, since division is
                 // expensive...
                 // ...but so is operations on larger numbers
+                // Should depend on security parameter
                 if (c % 5 == 0) {
                     acc %= (*x);
                 }
@@ -407,9 +408,9 @@ she_serialize_private_key(she_private_key_t *sk) {
     }
 
     stringstream ss;
-    ss << sk->p->get_str(62) << ' '
-       << mpz_class(sk->etha).get_str(62) << ' '
-       << mpz_class(sk->s).get_str(62) << ' '
+    ss << sk->p->get_str(62) << '/'
+       << mpz_class(sk->etha).get_str(62) << '/'
+       << mpz_class(sk->s).get_str(62) << '/'
        << mpz_class(sk->l).get_str(62);
     auto t = ss.str();
     char* res = new char[t.size() + 1];
@@ -418,6 +419,21 @@ she_serialize_private_key(she_private_key_t *sk) {
     return res;
 }
 
+// she_private_key_t*
+// she_deserialize_private_key(char* s) {
+//     if (!s) {
+//         return nullptr;
+//     }
+//
+//     istringstream ss(s);
+//     string ;
+//
+//     while (getline()) {
+//
+//     }
+//     return res;
+// }
+
 char*
 she_serialize_public_key(she_public_key_t *pk) {
     if (!pk) {
@@ -425,9 +441,9 @@ she_serialize_public_key(she_public_key_t *pk) {
     }
 
     stringstream ss;
-    ss << pk->x->get_str(62) << ' '
-       << mpz_class(pk->gamma).get_str(62) << ' '
-       << mpz_class(pk->s).get_str(62) << ' '
+    ss << pk->x->get_str(62) << '/'
+       << mpz_class(pk->gamma).get_str(62) << '/'
+       << mpz_class(pk->s).get_str(62) << '/'
        << mpz_class(pk->l).get_str(62);
     auto t = ss.str();
     char* res = new char[t.size() + 1];
@@ -444,7 +460,7 @@ she_serialize_ciphertext(she_ciphertext_t *c) {
 
     stringstream ss;
     for (int i=0; i < (c->data.size()); ++i) {
-        ss << c->data[i].get_str(62) << ' ';
+        ss << c->data[i].get_str(62) << '/';
     }
     auto t = ss.str();
     char* res = new char[t.size() + 1];

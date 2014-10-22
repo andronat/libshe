@@ -21,6 +21,7 @@ def test_utils():
     m = make_plaintext(a)
     assert_equals(make_list(m), a)
 
+
 class TestKeygen(object):
 
     def setup(self):

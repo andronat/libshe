@@ -113,12 +113,16 @@ int main() {
     // Sum-Product
     {
         auto m = bit_array_create(8);
-
+        bit_array_set_bits(m, 7,  0, 1, 2, 3, 4, 5, 6);
         auto a = she_encrypt(pk, sk, m);
-        auto c = she_xor(pk, a, b);
 
-        auto p = she_sumprod(pk, a, c, 1);
-        auto q = she_sumprod(pk, a, x, 1);
+        auto x = bit_array_create(16);
+        bit_array_set_bit(x, 7);
+        auto y = bit_array_create(16);
+        bit_array_set_all(y);
+
+        auto p = she_sumprod(pk, a, x, 2, 8);
+        auto q = she_sumprod(pk, a, y, 2, 8);
 
         auto z = she_decrypt(sk, p);
         auto h = she_decrypt(sk, q);
@@ -126,10 +130,6 @@ int main() {
         cout << "Homomorphic sum-products:" << endl;
         cout << z << endl;
         cout << h << endl << endl;
-
-        she_free_ciphertext(c);
-        she_free_ciphertext(p);
-        she_free_ciphertext(q);
     }
 
     // Dot
