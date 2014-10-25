@@ -98,7 +98,7 @@ she_generate_private_key(unsigned int s, unsigned int l)
     mpz_ui_pow_ui(lower_bound.get_mpz_t(), 2, etha-1);
     mpz_mul_ui(upper_bound.get_mpz_t(), lower_bound.get_mpz_t(), 2);
 
-    mpz_class p = _random_odd_mpz(mpz_class(lower_bound-1), mpz_class(upper_bound+1));
+    mpz_class p = _random_odd_mpz(lower_bound-1, upper_bound+1);
 
     // p is the secret key
     auto sk = new she_private_key_t();
