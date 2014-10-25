@@ -89,17 +89,16 @@ she_generate_private_key(unsigned int s, unsigned int l)
 
     unsigned int etha = (s+3) * l;
 
-    mpz_t scratch;
-    mpz_init(scratch);
+    mpz_class lower_bound;
+    mpz_class upper_bound;
 
     // Chooses a random odd etha-bit integer p from (2Z + 1)
     // intersection (2^(etha-1), 2^etha) as the secret key sk.
 
-    mpz_ui_pow_ui(scratch, 2, etha-1);
-    mpz_class range(scratch);
-    mpz_class p = _random_odd_mpz(mpz_class(range-1), mpz_class(range+1));
+    mpz_ui_pow_ui(lower_bound.get_mpz_t(), 2, etha-1);
+    mpz_mul_ui(upper_bound.get_mpz_t(), lower_bound.get_mpz_t(), 2);
 
-    mpz_clear(scratch);
+    mpz_class p = _random_odd_mpz(mpz_class(lower_bound-1), mpz_class(upper_bound+1));
 
     // p is the secret key
     auto sk = new she_private_key_t();
