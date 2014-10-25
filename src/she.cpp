@@ -126,16 +126,14 @@ she_generate_public_key(she_private_key_t* sk)
 
     auto p = *(sk->p);
 
-    mpz_t scratch;
-    mpz_init(scratch);
+    mpz_class scratch;
 
     // Chooses random odd q0 from (2Z + 1) intersection [1, 2^gamma/p)
     // and sets pk = q0 * p.
-    mpz_init(scratch);
-    mpz_ui_pow_ui(scratch, 2, gamma);
-    mpz_class t(mpz_class(scratch) / p);
+    mpz_ui_pow_ui(scratch.get_mpz_t(), 2, gamma);
+    mpz_class upper_bound(scratch / p);
 
-    mpz_class q0 = _random_odd_mpz(1, t-1);
+    mpz_class q0 = _random_odd_mpz(1, upper_bound-1);
     mpz_class x = q0 * p;
 
     // x is the public key
