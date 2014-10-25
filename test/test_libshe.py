@@ -103,45 +103,157 @@ class TestSumprod(object):
         return make_list_from_plaintext(ptxt)
 
     def test_gamma0(self):
-        assert_equals(self.make_gamma(0), make_index_vector(0, size=4))
+        k = 0
+        assert_equals(self.make_gamma(k), make_index_vector(k, size=4))
 
     def test_gamma1(self):
-        assert_equals(self.make_gamma(1), make_index_vector(1, size=4))
+        k = 1
+        assert_equals(self.make_gamma(k), make_index_vector(k, size=4))
 
     def test_gamma2(self):
-        assert_equals(self.make_gamma(2), make_index_vector(2, size=4))
+        k = 2
+        assert_equals(self.make_gamma(k), make_index_vector(k, size=4))
 
     def test_gamma3(self):
-        assert_equals(self.make_gamma(3), make_index_vector(3, size=4))
+        k = 3
+        assert_equals(self.make_gamma(k), make_index_vector(k, size=4))
 
 
 class TestDot(object):
 
     def setup(self):
-        self.sk = lib.she_generate_private_key(128, 8)
+        self.l = 8
+        self.sk = lib.she_generate_private_key(128, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
         self.raw = [[0, 1, 0, 1, 1, 0, 1, 0],
                     [1, 0, 0, 0, 0, 0, 0, 1],
                     [1, 0, 1, 1, 1, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1]]
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [0, 0, 0, 0, 1, 0, 0, 0]]
         self.n = len(self.raw)
         self.data = make_plaintext(flatten(self.raw))
 
     def make_query(self, i):
         index_vector = make_plaintext(make_index_vector(i, size=self.n))
         gamma = lib.she_encrypt(self.pk, self.sk, index_vector)
-        ctxt = lib.she_dot(self.pk, gamma, self.data, self.n, 8)
+        ctxt = lib.she_dot(self.pk, gamma, self.data, self.n, self.l)
         ptxt = lib.she_decrypt(self.sk, ctxt)
         return make_list_from_plaintext(ptxt)
 
     def test_dot0(self):
-        assert_equals(self.raw[0], self.make_query(0))
+        k = 0
+        assert_equals(self.raw[k], self.make_query(k))
 
     def test_dot1(self):
-        assert_equals(self.raw[1], self.make_query(1))
+        k = 1
+        assert_equals(self.raw[k], self.make_query(k))
 
     def test_dot2(self):
-        assert_equals(self.raw[2], self.make_query(2))
+        k = 2
+        assert_equals(self.raw[k], self.make_query(k))
 
     def test_dot3(self):
-        assert_equals(self.raw[3], self.make_query(3))
+        k = 3
+        assert_equals(self.raw[k], self.make_query(k))
+
+
+class TestPIR(object):
+
+    def setup(self):
+        self.l = 8
+        self.sk = lib.she_generate_private_key(128, self.l)
+        self.pk = lib.she_generate_public_key(self.sk)
+        self.raw = [[0, 1, 0, 1, 1, 0, 1, 0],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [0, 0, 0, 0, 1, 0, 0, 0]]
+        self.n = len(self.raw)
+        self.size = 8
+        self.data = make_plaintext(flatten(self.raw))
+
+        self.indices = make_plaintext(
+            flatten([binary(i, size=self.l) for i in range(self.n)]))
+
+    def make_gamma(self, i):
+        plain_index = make_plaintext(binary(i, size=self.l))
+        c = lib.she_encrypt(self.pk, self.sk, plain_index)
+        ctxt = lib.she_sumprod(self.pk, c, self.indices, self.n, self.l)
+        return ctxt
+
+    def make_query(self, i, gamma=None):
+        if gamma is None:
+            gamma = self.make_gamma(i)
+        ctxt = lib.she_dot(self.pk, gamma, self.data, self.n, self.l)
+        ptxt = lib.she_decrypt(self.sk, ctxt)
+        return make_list_from_plaintext(ptxt)
+
+    def test_gamma0(self):
+        k = 0
+        gamma = self.make_gamma(k)
+        assert_equals(make_list_from_plaintext(lib.she_decrypt(self.sk, gamma)),
+                      make_index_vector(k, size=self.n))
+
+    def test_gamma1(self):
+        k = 1
+        gamma = self.make_gamma(k)
+        assert_equals(make_list_from_plaintext(lib.she_decrypt(self.sk, gamma)),
+                      make_index_vector(k, size=self.n))
+
+    def test_query0(self):
+        k = 0
+        gamma = lib.she_encrypt(self.pk, self.sk,
+                                make_plaintext(make_index_vector(k, size=self.n)))
+        response = self.make_query(k, gamma)
+        assert_equals(response, self.raw[k])
+
+    def test_query1(self):
+        k = 1
+        gamma = lib.she_encrypt(self.pk, self.sk,
+                                make_plaintext(make_index_vector(k, size=self.n)))
+        response = self.make_query(k, gamma)
+        assert_equals(response, self.raw[k])
+
+    def test_query2(self):
+        k = 2
+        gamma = lib.she_encrypt(self.pk, self.sk,
+                                make_plaintext(make_index_vector(k, size=self.n)))
+        response = self.make_query(k, gamma)
+        assert_equals(response, self.raw[k])
+
+    def test_query3(self):
+        k = 3
+        gamma = lib.she_encrypt(self.pk, self.sk,
+                                make_plaintext(make_index_vector(k, size=self.n)))
+        response = self.make_query(k, gamma)
+        assert_equals(response, self.raw[k])
+
+    def test_full_query0(self):
+        k = 0
+        response = self.make_query(k)
+        assert_equals(response, self.raw[k])
+
+    def test_full_query1(self):
+        k = 1
+        response = self.make_query(k)
+        assert_equals(response, self.raw[k])
+
+    def test_full_query2(self):
+        k = 2
+        response = self.make_query(k)
+        assert_equals(response, self.raw[k])
+
+    def test_full_query3(self):
+        k = 3
+        response = self.make_query(k)
+        assert_equals(response, self.raw[k])
