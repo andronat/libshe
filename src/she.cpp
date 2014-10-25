@@ -19,6 +19,8 @@ using namespace std;
 // UTILS
 // =====
 
+
+// Return random GMP integer in range from `a` to `b` inclusive
 mpz_class _random_mpz(const mpz_class& a, const mpz_class& b) {
     gmp_randclass random_generator(gmp_randinit_default);
     random_device dev("/dev/urandom");
@@ -26,6 +28,7 @@ mpz_class _random_mpz(const mpz_class& a, const mpz_class& b) {
     return a + random_generator.get_z_range(b);
 }
 
+// Return random odd GMP integer in range from `a` to `b` inclusive
 mpz_class _random_odd_mpz(const mpz_class& a, const mpz_class& b) {
     auto res = _random_mpz(a, b);
     // TODO: is this trick harmless in crypto setting?
@@ -38,8 +41,6 @@ mpz_class _random_odd_mpz(const mpz_class& a, const mpz_class& b) {
     }
     return res;
 }
-
-// The following should be exposed as C API
 
 // ======
 // KEYGEN
@@ -75,13 +76,12 @@ she_free_public_key(she_public_key_t* pk) {
     pk = 0;
 }
 
+// Generate private key
+//   s: security
+//   l: supported ciphertext length (bits)
 she_private_key_t*
 she_generate_private_key(unsigned int s, unsigned int l)
 {
-    // Generate private key
-    //   s: security
-    //   l: ciphertext length (bits)
-
     if (s == 0 || l == 0) {
         return nullptr;
     }
@@ -110,12 +110,12 @@ she_generate_private_key(unsigned int s, unsigned int l)
     return sk;
 }
 
+
+// Generate public key
+//   sk: generated private key
 she_public_key_t*
 she_generate_public_key(she_private_key_t* sk)
 {
-    // Generate public key
-    //   sk: generated private key
-
     if (!sk) {
         return nullptr;
     }
@@ -164,15 +164,15 @@ she_free_ciphertext(she_ciphertext_t* c) {
     c = 0;
 }
 
+
+// Encrypt array of bits
+//   pk: public key
+//   sk: private key
+//   m: array of bits
+//   n: array size
 she_ciphertext_t*
 she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
 {
-    // Encrypt array of bits
-    //   pk: public key
-    //   sk: private key
-    //   m: array or bits
-    //   n: array size
-
     if (!m || !pk || !sk || pk->l != sk->l || pk->s != sk->s) {
         return nullptr;
     }
@@ -210,13 +210,12 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
     return res;
 }
 
+// Decrypt array of bits
+//   sk: private key
+//   c: ciphertext
 BIT_ARRAY*
 she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
 {
-    // Decrypt array of bits
-    //   sk: private key
-    //   c: ciphertext
-
     if (!sk || !c) {
         return nullptr;
     }
@@ -240,14 +239,13 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
 // OPERATIONS
 // ==========
 
+// XOR ciphertexts `a` and `b`
+//   sk: private key
+//   a: ciphertext
+//   b: ciphertext
 she_ciphertext_t *
 she_xor(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 {
-    // Homomorphically XOR ciphertexts
-    //   sk: private key
-    //   a: ciphertext
-    //   b: ciphertext
-
     if (!pk || !a || !b || a->data.size() != b->data.size()) {
         return nullptr;
     }
@@ -264,15 +262,13 @@ she_xor(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
     return res;
 }
 
+// XOR ciphertext and plaintext
+//   sk: private key
+//   a: ciphertext
+//   b: bit array
 she_ciphertext_t*
 she_xor1(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b)
 {
-    // Homomorphically XOR ciphertext and plaintext
-    //   sk: private key
-    //   a: ciphertext
-    //   b: bit array
-    //   n: array size
-
     bit_index_t n;
     if (!pk || !a || !b || a->data.size() != (n = bit_array_length(b))) {
         return nullptr;
@@ -289,14 +285,13 @@ she_xor1(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b)
     return res;
 }
 
+// AND ciphertexts
+//   sk: private key
+//   a: ciphertext
+//   b: ciphertext
 she_ciphertext_t*
 she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 {
-    // Homomorphically AND ciphertexts
-    //   sk: private key
-    //   a: ciphertext
-    //   b: ciphertext
-
     if (a->data.size() != b->data.size()) {
         return nullptr;
     }
@@ -313,18 +308,19 @@ she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
     return res;
 }
 
+// Compute AND product of the sum of ciphertext `a` and each
+// negated plaintext row in `b`
+//   pk: public key
+//   b: flattened to bit array bit matrix
+//   n: number of rows
+//   l: number of columns
 she_ciphertext_t*
-she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas,
+she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b,
     unsigned int n, unsigned int l)
 {
-    // Homomorphically computes AND product of the sum of ciphertext `a` and
-    // negated plaintexts `betas`
-    //   pk: public key
-    //   betas: number of plaintexts
-    //   n: number of ciphertexts
-    //   l: size of plaintext
-
-    if (!pk || !a || !betas || n == 0 || bit_array_length(betas) != n*l) {
+    if (!pk || !a || !b || n == 0 ||
+        a->data.size() < l || bit_array_length(b) != n*l)
+    {
         return nullptr;
     }
 
@@ -335,7 +331,7 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas,
     for (int i=0; i<n; ++i) {
         mpz_class acc = 1;
         for (int j=0; j<l; ++j) {
-            auto beta = bit_array_get_bit(betas, i*l + j);
+            auto beta = bit_array_get_bit(b, i*l + j);
             acc *= (a->data[j] + beta + 1);
 
             // TODO: Optimize this. 3 was picked randomly in order for
@@ -354,19 +350,18 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas,
     return res;
 }
 
+// Compute dot product of `g` and each column of `b` matrix
+//   pk: public key
+//   g: ciphertext
+//   b: flattened to bit array bit matrix
+//   n: number of rows
+//   m: number of columns
 she_ciphertext_t*
 she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_ARRAY* b,
     unsigned int n, unsigned int m)
 {
-    // Dot product of `g` and each column of `b` matrix
-    //   pk: public key
-    //   g: ciphertext
-    //   b: bit matrix
-    //   n: number of rows
-    //   m: number of columns
-
     if (!pk || !g || !b || n == 0 || m == 0 ||
-        g->data.size() != n || bit_array_length(b) != n*m)
+        g->data.size() < n || bit_array_length(b) != n*m)
     {
         return nullptr;
     }
