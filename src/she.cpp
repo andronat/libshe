@@ -48,7 +48,7 @@ mpz_class _random_odd_mpz(const mpz_class& a, const mpz_class& b) {
 
 struct she_private_key_t {
     shared_ptr<mpz_class> p;
-    unsigned int etha; // bit length of p
+    unsigned int etha; // bit length of private key p
     unsigned int s;
     unsigned int l;
 };
@@ -63,7 +63,7 @@ she_free_private_key(she_private_key_t* sk) {
 
 struct she_public_key_t {
     shared_ptr<mpz_class> x;
-    unsigned int gamma; // bit length of x
+    unsigned int gamma; // bit length of public key x
     unsigned int s;
     unsigned int l;
 };
@@ -77,8 +77,9 @@ she_free_public_key(she_public_key_t* pk) {
 }
 
 // Generate private key
-//   s: security
-//   l: supported ciphertext length (bits)
+//   s: security parameter
+//   l: supported ciphertext length in bits, equivalent to (log m) rounded up,
+//      where m is the number of blocks in the database
 she_private_key_t*
 she_generate_private_key(unsigned int s, unsigned int l)
 {
