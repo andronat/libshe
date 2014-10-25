@@ -1,5 +1,5 @@
 CXX         := clang++
-CFLAGS      := -g -Wall -fPIC --std=c++11
+CFLAGS      := -g -Wall -fPIC --std=c++11 -O3
 
 BITARR      := lib/BitArray
 
@@ -24,7 +24,7 @@ all: $(LIBTARGET)
 
 $(LIBTARGET): $(OBJECTS) $(BITARRLIB)
 	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CFLAGS) $(INC) $(LIB) -shared $^ -o $(LIBTARGET)
+	$(CXX) $(LIB) -shared $^ -o $(LIBTARGET)
 
 $(OBJECTS): $(SOURCES)
 	@mkdir -p $(BUILDDIR)
