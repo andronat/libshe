@@ -3,7 +3,7 @@ CFLAGS      := -g -Wall -fPIC --std=c++11 -O3
 
 BITARR      := lib/BitArray
 
-LIB         := -lgmp
+LIB         := -lgmpxx -lgmp
 INC         := -Iinclude -I$(BITARR)
 
 SRCDIR      := src
