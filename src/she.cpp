@@ -314,7 +314,8 @@ she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 }
 
 she_ciphertext_t*
-she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas, unsigned int n, unsigned int l)
+she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* betas,
+    unsigned int n, unsigned int l)
 {
     // Homomorphically computes AND product of the sum of ciphertext `a` and
     // negated plaintexts `betas`
@@ -364,7 +365,9 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_ARRAY* b,
     //   n: number of rows
     //   m: number of columns
 
-    if (!pk || !g || !b || n == 0 || m == 0 || bit_array_length(b) != n*m) {
+    if (!pk || !g || !b || n == 0 || m == 0 ||
+        g->data.size() != n || bit_array_length(b) != n*m)
+    {
         return nullptr;
     }
 
