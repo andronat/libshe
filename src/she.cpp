@@ -195,7 +195,7 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
         mpz_class q = _random_odd_mpz(1, t-1);
         mpz_clear(scratch);
 
-        // Chooses random noise r from (-2s, 2s)
+        // Chooses random noise r from (-2^s, 2^s)
         mpz_init(scratch);
         mpz_ui_pow_ui(scratch, 2, s);
         mpz_class z(scratch);
@@ -316,7 +316,7 @@ she_ciphertext_t*
 she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b,
     unsigned int n, unsigned int l)
 {
-    if (!pk || !a || !b || n == 0 ||
+    if (!pk || !a || !b || n == 0 || l == 0 ||
         a->data.size() < l || bit_array_length(b) != n*l)
     {
         return nullptr;
