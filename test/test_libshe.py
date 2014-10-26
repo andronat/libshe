@@ -210,6 +210,18 @@ class TestPIR(object):
         assert_equals(make_list_from_plaintext(lib.she_decrypt(self.sk, gamma)),
                       make_index_vector(k, size=self.n))
 
+    def test_gamma2(self):
+        k = 2
+        gamma = self.make_gamma(k)
+        assert_equals(make_list_from_plaintext(lib.she_decrypt(self.sk, gamma)),
+                      make_index_vector(k, size=self.n))
+
+    def test_gamma3(self):
+        k = 3
+        gamma = self.make_gamma(k)
+        assert_equals(make_list_from_plaintext(lib.she_decrypt(self.sk, gamma)),
+                      make_index_vector(k, size=self.n))
+
     def test_query0(self):
         k = 0
         gamma = lib.she_encrypt(self.pk, self.sk,
