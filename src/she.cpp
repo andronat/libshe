@@ -98,7 +98,7 @@ she_generate_private_key(unsigned int s, unsigned int l)
     mpz_ui_pow_ui(lower_bound.get_mpz_t(), 2, etha-1);
     mpz_mul_ui(upper_bound.get_mpz_t(), lower_bound.get_mpz_t(), 2);
 
-    mpz_class p = _random_odd_mpz(lower_bound-1, upper_bound+1);
+    mpz_class p = _random_odd_mpz(lower_bound+1, upper_bound-1);
 
     // p is the secret key
     auto sk = new she_private_key_t();
@@ -186,20 +186,17 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
     auto n = bit_array_length(m);
 
     for (int i=0; i<n; ++i) {
-        mpz_t scratch;
+        mpz_class scratch;
 
         // Chooses random odd q from (2Z + 1) intersection [1, 2^gamma/p)
-        mpz_init(scratch);
-        mpz_ui_pow_ui(scratch, 2, gamma);
-        mpz_class t(mpz_class(scratch) / *p);
-        mpz_class q = _random_odd_mpz(1, t-1);
-        mpz_clear(scratch);
+        mpz_ui_pow_ui(scratch.get_mpz_t(), 2, gamma);
+        mpz_class upper_bound(scratch / *p);
+        mpz_class q = _random_odd_mpz(1, upper_bound-1);
 
         // Chooses random noise r from (-2^s, 2^s)
-        mpz_init(scratch);
-        mpz_ui_pow_ui(scratch, 2, s);
-        mpz_class z(scratch);
-        mpz_class r = _random_mpz(-z, z);
+        mpz_ui_pow_ui(scratch.get_mpz_t(), 2, s);
+        mpz_class bound(scratch);
+        mpz_class r = _random_mpz(-bound, bound);
 
         // Encrypts m[i]
         res->data.push_back((q*(*p) + 2*r + bit_array_get_bit(m, i)) % (*x));
@@ -330,7 +327,7 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b,
         mpz_class acc = 1;
         for (int j=0; j<l; ++j) {
             auto beta = bit_array_get_bit(b, i*l + j);
-            acc *= (a->data[j] + beta + 1);
+            acc *= (a->data[j] + (1 ? beta == 0 : 0));
 
             // TODO: Optimize this. 3 was picked randomly in order for
             // mod division to not be performed every time, since division is
