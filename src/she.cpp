@@ -234,70 +234,43 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
 // OPERATIONS
 // ==========
 
-// XOR ciphertexts `a` and `b`
+// XOR ciphertexts `cs`
 //   sk: private key
-//   a: ciphertext
-//   b: ciphertext
+//   a: array of ciphertexts
+//   n: number of ciphertexts
+//   m: size of ciphertexts
 she_ciphertext_t *
-she_xor(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
+she_xor(she_public_key_t* pk, she_ciphertext_t* cs,
+    unsigned int n, unsigned m)
 {
-    if (!pk || !a || !b || a->data.size() != b->data.size()) {
+    if (!pk || !cs || n == 0 || m == 0) {
         return nullptr;
     }
 
-    auto x = pk->x;
-    auto l = pk->l;
-
-    auto res = new she_ciphertext_t();
-    for (int i=0; i<l; ++i) {
-        mpz_class t = (a->data[i] + b->data[i]) % (*x);
-        res->data.push_back(t);
-    }
-
-    return res;
-}
-
-// XOR ciphertext and plaintext
-//   sk: private key
-//   a: ciphertext
-//   b: bit array
-she_ciphertext_t*
-she_xor1(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b)
-{
-    bit_index_t n;
-    if (!pk || !a || !b || a->data.size() != (n = bit_array_length(b))) {
-        return nullptr;
-    }
-
-    auto x = pk->x;
-
-    auto res = new she_ciphertext_t();
     for (int i=0; i<n; ++i) {
-        mpz_class t = (a->data[i] + bit_array_get_bit(b, i)) % (*x);
-        res->data.push_back(t);
-    }
-
-    return res;
-}
-
-// AND ciphertexts
-//   sk: private key
-//   a: ciphertext
-//   b: ciphertext
-she_ciphertext_t*
-she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
-{
-    if (a->data.size() != b->data.size()) {
-        return nullptr;
-    }
+        if (cs[i].data.size() != m) {
+            return nullptr;
+        }
+     }
 
     auto x = pk->x;
 
     auto res = new she_ciphertext_t();
+    for (int j=0; j<m; ++j) {
+        mpz_class acc = 0;
+        for (int i=0; i<n; ++i) {
+            acc += cs[i].data[j];
 
-    for (int i=0; i<a->data.size(); ++i) {
-        mpz_class t = (a->data[i] * b->data[i] + 1) % (*x);
-        res->data.push_back(t);
+            // TODO: Optimize this. 5 was picked randomly in order for
+            // mod division to not be performed every time, since division is
+            // expensive...
+            // ...but so is operations on larger numbers
+            // Should depend on security parameter
+            if (i % 5 == 0) {
+                acc %= (*x);
+            }
+        }
+        res->data.push_back(acc);
     }
 
     return res;
@@ -306,7 +279,7 @@ she_and(she_public_key_t* pk, she_ciphertext_t* a, she_ciphertext_t* b)
 // Compute AND product of the sum of ciphertext `a` and each
 // negated plaintext row in `b`
 //   pk: public key
-//   b: flattened to bit array bit matrix
+//   b: bit matrix flattened to bit array
 //   n: number of rows
 //   l: number of columns
 she_ciphertext_t*
