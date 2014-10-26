@@ -224,7 +224,7 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
     for (int i=0; i<n; ++i) {
         // Decrypts c[i]
         mpz_class t = c->data[i] % (*p) % 2;
-        bit_array_assign_bit(res, i, (char) !((bool) t.get_si()));
+        bit_array_assign_bit(res, i, !t.get_si());
     }
 
     return res;
@@ -327,7 +327,7 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b,
         mpz_class acc = 1;
         for (int j=0; j<l; ++j) {
             auto beta = bit_array_get_bit(b, i*l + j);
-            acc *= (a->data[j] + (1 ? beta == 0 : 0));
+            acc *= (a->data[j] + beta + 1);
 
             // TODO: Optimize this. 3 was picked randomly in order for
             // mod division to not be performed every time, since division is
@@ -338,7 +338,7 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, BIT_ARRAY* b,
                 acc %= (*x);
             }
         }
-        acc += 1; acc %= (*x);
+        acc %= (*x);
         (res->data).push_back(acc);
     }
 
@@ -383,7 +383,7 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_ARRAY* b,
                 }
             }
         }
-        acc %= (*x);
+        acc += 1; acc %= (*x);
         res->data.push_back(acc);
     }
 
