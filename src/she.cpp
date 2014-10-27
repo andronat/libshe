@@ -191,7 +191,7 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
         // Chooses random odd q from (2Z + 1) intersection [1, 2^gamma/p)
         mpz_ui_pow_ui(scratch.get_mpz_t(), 2, gamma);
         mpz_class upper_bound(scratch / *p);
-        mpz_class q = _random_odd_mpz(1, upper_bound-1);
+        mpz_class q = _random_mpz(1, upper_bound-1);
 
         // Chooses random noise r from (-2^s, 2^s)
         mpz_ui_pow_ui(scratch.get_mpz_t(), 2, s);
