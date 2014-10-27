@@ -25,7 +25,7 @@ mpz_class _random_mpz(const mpz_class& a, const mpz_class& b) {
     gmp_randclass random_generator(gmp_randinit_default);
     random_device dev("/dev/urandom");
     random_generator.seed(dev());
-    return a + random_generator.get_z_range(b);
+    return a + random_generator.get_z_range(b-a+1);
 }
 
 // Return random odd GMP integer in range from `a` to `b` inclusive
