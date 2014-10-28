@@ -20,16 +20,16 @@ def make_index_vector(i, size):
     return [1 if j == i else 0 for j in range(size)]
 
 
-def make_plaintext(bits):
+def make_bit_array(bits):
     indices = [i for i, _ in filter(lambda tpl: tpl[1] == 1, enumerate(bits))]
     bar = lib.bit_array_create(len(bits))
     lib.bit_array_set_bits(bar, len(indices), *indices)
     return bar
 
 
-def make_list_from_plaintext(plaintext):
-    n = lib.bit_array_length(plaintext)
-    return [int(lib.bit_array_get_bit(plaintext, i))
+def make_list_from_bit_array(bit_array):
+    n = lib.bit_array_length(bit_array)
+    return [int(lib.bit_array_get_bit(bit_array, i))
             for i in range(n)]
 
 
@@ -37,10 +37,10 @@ def flatten(nested):
     return list(chain.from_iterable(nested))
 
 
-def test_plaintext_utils():
+def test_bit_array_utils():
     a = [1, 0, 0, 1, 0, 1, 0, 1]
-    m = make_plaintext(a)
-    assert_equals(make_list_from_plaintext(m), a)
+    m = make_bit_array(a)
+    assert_equals(make_list_from_bit_array(m), a)
 
 
 def test_binary():
@@ -73,18 +73,19 @@ class TestKeygen(object):
 class TestEncryption(object):
 
     def setup(self):
-        self.sk = lib.she_generate_private_key(128, 8)
+        self.sk = lib.she_generate_private_key(60, 8)
         self.pk = lib.she_generate_public_key(self.sk)
         self.raw = [1, 0, 0, 1, 0, 1, 0, 1]
-        self.data = make_plaintext(self.raw)
+        self.data = make_bit_array(self.raw)
 
     def test_encryption(self):
         lib.she_encrypt(self.pk, self.sk, self.data)
 
     def test_decryption(self):
-        ctxt = lib.she_encrypt(self.pk, self.sk, self.data)
-        ptxt = lib.she_decrypt(self.sk, ctxt)
-        assert_equals(self.raw, make_list_from_plaintext(ptxt))
+        for i in range(1000):
+            ctxt = lib.she_encrypt(self.pk, self.sk, self.data)
+            ptxt = lib.she_decrypt(self.sk, ctxt)
+            assert_equals(self.raw, make_list_from_bit_array(ptxt))
 
 
 class TestXOR(object):
@@ -98,7 +99,7 @@ class TestXOR(object):
                     [1, 0, 0, 1, 1, 0, 0, 1]]
         self.n = len(self.raw)
         self.size = 8
-        self.data = [lib.she_encrypt(self.pk, self.sk, make_plaintext(row))
+        self.data = [lib.she_encrypt(self.pk, self.sk, make_bit_array(row))
                      for row in self.raw]
 
     @nottest
@@ -124,13 +125,13 @@ class TestPIR(object):
                     [0, 0, 0, 0, 1, 0, 0, 0]]
         self.n = len(self.raw)
         self.size = 8
-        self.data = make_plaintext(flatten(self.raw))
+        self.data = make_bit_array(flatten(self.raw))
 
-        self.indices = make_plaintext(
+        self.indices = make_bit_array(
             flatten([binary(i, size=self.l) for i in range(self.n)]))
 
     def make_gamma(self, i):
-        plain_index = make_plaintext(binary(i, size=self.l))
+        plain_index = make_bit_array(binary(i, size=self.l))
         c = lib.she_encrypt(self.pk, self.sk, plain_index)
         ctxt = lib.she_sumprod(self.pk, c, self.indices, self.n, self.l)
         return ctxt
@@ -140,13 +141,13 @@ class TestPIR(object):
             gamma = self.make_gamma(i)
         ctxt = lib.she_dot(self.pk, gamma, self.data, self.n, self.l)
         ptxt = lib.she_decrypt(self.sk, ctxt)
-        return make_list_from_plaintext(ptxt)
+        return make_list_from_bit_array(ptxt)
 
     @nottest
     def test_gamma0(self):
         k = 0
         gamma = self.make_gamma(k)
-        assert_equals(make_list_from_plaintext(
+        assert_equals(make_list_from_bit_array(
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
@@ -154,7 +155,7 @@ class TestPIR(object):
     def test_gamma1(self):
         k = 1
         gamma = self.make_gamma(k)
-        assert_equals(make_list_from_plaintext(
+        assert_equals(make_list_from_bit_array(
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
@@ -162,7 +163,7 @@ class TestPIR(object):
     def test_gamma2(self):
         k = 2
         gamma = self.make_gamma(k)
-        assert_equals(make_list_from_plaintext(
+        assert_equals(make_list_from_bit_array(
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
@@ -170,7 +171,7 @@ class TestPIR(object):
     def test_gamma3(self):
         k = 3
         gamma = self.make_gamma(k)
-        assert_equals(make_list_from_plaintext(
+        assert_equals(make_list_from_bit_array(
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, self.n))
 
@@ -178,7 +179,7 @@ class TestPIR(object):
     def test_query0(self):
         k = 0
         gamma = lib.she_encrypt(self.pk, self.sk,
-                                make_plaintext(make_index_vector(k, self.n)))
+                                make_bit_array(make_index_vector(k, self.n)))
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
@@ -186,7 +187,7 @@ class TestPIR(object):
     def test_query1(self):
         k = 1
         gamma = lib.she_encrypt(self.pk, self.sk,
-                                make_plaintext(make_index_vector(k, self.n)))
+                                make_bit_array(make_index_vector(k, self.n)))
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
@@ -194,7 +195,7 @@ class TestPIR(object):
     def test_query2(self):
         k = 2
         gamma = lib.she_encrypt(self.pk, self.sk,
-                                make_plaintext(make_index_vector(k, self.n)))
+                                make_bit_array(make_index_vector(k, self.n)))
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
@@ -202,26 +203,30 @@ class TestPIR(object):
     def test_query3(self):
         k = 3
         gamma = lib.she_encrypt(self.pk, self.sk,
-                                make_plaintext(make_index_vector(k, self.n)))
+                                make_bit_array(make_index_vector(k, self.n)))
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
     def test_full_query0(self):
-        k = 0
-        response = self.make_query(k)
-        assert_equals(response, self.raw[k])
+        for i in range(100):
+            k = 0
+            response = self.make_query(k)
+            assert_equals(response, self.raw[k])
 
     def test_full_query1(self):
-        k = 1
-        response = self.make_query(k)
-        assert_equals(response, self.raw[k])
+        for i in range(100):
+            k = 1
+            response = self.make_query(k)
+            assert_equals(response, self.raw[k])
 
     def test_full_query2(self):
-        k = 2
-        response = self.make_query(k)
-        assert_equals(response, self.raw[k])
+        for i in range(100):
+            k = 2
+            response = self.make_query(k)
+            assert_equals(response, self.raw[k])
 
     def test_full_query3(self):
-        k = 3
-        response = self.make_query(k)
-        assert_equals(response, self.raw[k])
+        for i in range(100):
+            k = 3
+            response = self.make_query(k)
+            assert_equals(response, self.raw[k])

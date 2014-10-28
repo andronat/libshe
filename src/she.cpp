@@ -19,26 +19,36 @@ using namespace std;
 // UTILS
 // =====
 
+shared_ptr<gmp_randclass> make_random_generator() {
+    random_device dev("/dev/urandom");
+    shared_ptr<gmp_randclass> gen(new gmp_randclass(gmp_randinit_default));
+    gen->seed(dev());
+    return gen;
+}
 
 // Return random GMP integer in range from `a` to `b` inclusive
 mpz_class _random_mpz(const mpz_class& a, const mpz_class& b) {
-    gmp_randclass random_generator(gmp_randinit_default);
-    random_device dev("/dev/urandom");
-    random_generator.seed(dev());
-    return a + random_generator.get_z_range(b-a+1);
+    auto gen = make_random_generator();
+    return a + gen->get_z_range(b-a+1);
 }
 
 // Return random odd GMP integer in range from `a` to `b` inclusive
 mpz_class _random_odd_mpz(const mpz_class& a, const mpz_class& b) {
-    auto res = _random_mpz(a, b);
-    // TODO: is this trick harmless in crypto setting?
-    if (res % 2 == 0) {
-        if (res == a) {
-            ++res;
-        } else {
-            --res;
-        }
-    }
+    mpz_class res;
+    while ((res = _random_mpz(a, b)) % 2 == 0) {};
+    return res;
+}
+
+// Return random GMP integer having `n` bits
+mpz_class _random_mpz_bits(unsigned int n) {
+    auto gen = make_random_generator();
+    return gen->get_z_bits(n);
+}
+
+// Return random odd GMP integer having `n` bits
+mpz_class _random_odd_mpz_bits(unsigned int n) {
+    mpz_class res;
+    while ((res = _random_mpz_bits(n)) % 2 == 0) {};
     return res;
 }
 
@@ -89,16 +99,10 @@ she_generate_private_key(unsigned int s, unsigned int l)
 
     unsigned int etha = (s+3) * l;
 
-    mpz_class lower_bound;
-    mpz_class upper_bound;
-
     // Chooses a random odd etha-bit integer p from (2Z + 1)
     // intersection (2^(etha-1), 2^etha) as the secret key sk.
 
-    mpz_ui_pow_ui(lower_bound.get_mpz_t(), 2, etha-1);
-    mpz_mul_ui(upper_bound.get_mpz_t(), lower_bound.get_mpz_t(), 2);
-
-    mpz_class p = _random_odd_mpz(lower_bound+1, upper_bound-1);
+    auto p = _random_odd_mpz_bits(etha);
 
     // p is the secret key
     auto sk = new she_private_key_t();
@@ -124,17 +128,15 @@ she_generate_public_key(she_private_key_t* sk)
     auto l = sk->l;
     unsigned int gamma = (5 * (s+3) * l / 2);
 
-    auto p = *(sk->p);
-
-    mpz_class scratch;
+    auto p = sk->p;
 
     // Chooses random odd q0 from (2Z + 1) intersection [1, 2^gamma/p)
     // and sets pk = q0 * p.
-    mpz_ui_pow_ui(scratch.get_mpz_t(), 2, gamma);
-    mpz_class upper_bound(scratch / p);
-
+    mpz_class upper_bound;
+    mpz_ui_pow_ui(upper_bound.get_mpz_t(), 2, gamma);
+    mpz_cdiv_q(upper_bound.get_mpz_t(), upper_bound.get_mpz_t(), p->get_mpz_t());
     mpz_class q0 = _random_odd_mpz(1, upper_bound-1);
-    mpz_class x = q0 * p;
+    mpz_class x = q0 * (*p);
 
     // x is the public key
     auto pk = new she_public_key_t();
@@ -186,20 +188,20 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
     auto n = bit_array_length(m);
 
     for (int i=0; i<n; ++i) {
-        mpz_class scratch;
 
-        // Chooses random odd q from (2Z + 1) intersection [1, 2^gamma/p)
-        mpz_ui_pow_ui(scratch.get_mpz_t(), 2, gamma);
-        mpz_class upper_bound(scratch / *p);
-        mpz_class q = _random_mpz(1, upper_bound-1);
+        // Chooses random q from [1, 2^gamma/p)
+        mpz_class upper_bound;
+        mpz_ui_pow_ui(upper_bound.get_mpz_t(), 2, gamma);
+        mpz_cdiv_q(upper_bound.get_mpz_t(), upper_bound.get_mpz_t(), p->get_mpz_t());
+        auto q = _random_mpz(1, upper_bound-1);
 
-        // Chooses random noise r from (-2^s, 2^s)
-        mpz_ui_pow_ui(scratch.get_mpz_t(), 2, s);
-        mpz_class bound(scratch);
-        mpz_class r = _random_mpz(-bound, bound);
+        // Chooses random noise r from [1, 2^s)
+        mpz_class bound;
+        mpz_ui_pow_ui(bound.get_mpz_t(), 2, s);
+        auto r = _random_mpz(1, bound-1);
 
         // Encrypts m[i]
-        res->data.push_back((q*(*p) + 2*r + bit_array_get_bit(m, i)) % (*x));
+        res->data.push_back((q * (*p) + 2*r + bit_array_get_bit(m, i)) % (*x));
     }
 
     return res;
@@ -224,7 +226,7 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
     for (int i=0; i<n; ++i) {
         // Decrypts c[i]
         mpz_class t = c->data[i] % (*p) % 2;
-        bit_array_assign_bit(res, i, !t.get_si());
+        bit_array_assign_bit(res, i, t.get_si());
     }
 
     return res;
@@ -356,7 +358,7 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_ARRAY* b,
                 }
             }
         }
-        acc += 1; acc %= (*x);
+        acc %= (*x);
         res->data.push_back(acc);
     }
 
