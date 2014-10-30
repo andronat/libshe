@@ -441,18 +441,18 @@ she_serialize_ciphertext(she_ciphertext_t *c) {
 // ARRAY OF CIPHERTEXTS
 // ====================
 
-she_ciphertext_t** she_allocate_ciphertext_array(unsigned int size) {
-    return new she_ciphertext_t*[size];
+she_ciphertext_t** she_allocate_ciphertext_array(unsigned int n) {
+    return new she_ciphertext_t*[n];
 }
 
-void she_write_to_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int i, she_ciphertext_t *c) {
+void she_write_to_ciphertext_array(she_ciphertext_t** cs, unsigned int i, she_ciphertext_t *c) {
     // TODO: check the size
-    ciphertexts[i] = c;
+    cs[i] = c;
 }
 
-void she_free_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int size) {
-    for (int i=0; i<size; ++i) {
-        she_free_ciphertext(ciphertexts[i]);
+void she_free_ciphertext_array(she_ciphertext_t** cs, unsigned int n) {
+    for (int i=0; i<n; ++i) {
+        she_free_ciphertext(cs[i]);
     }
-    ciphertexts = 0;
+    cs = 0;
 }

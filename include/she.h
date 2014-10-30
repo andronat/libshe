@@ -35,8 +35,8 @@ struct she_ciphertext_t* she_encrypt(struct she_public_key_t* pk, struct she_pri
 BIT_ARRAY* she_decrypt(struct she_private_key_t* sk, struct she_ciphertext_t* c);
 
 // ciphertext array
-struct she_ciphertext_t** she_allocate_ciphertext_array(unsigned int size);
-void she_write_to_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int i, struct she_ciphertext_t *c);
-void she_free_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int size);
+struct she_ciphertext_t** she_allocate_ciphertext_array(unsigned int n);
+void she_write_to_ciphertext_array(she_ciphertext_t** cs, unsigned int i, struct she_ciphertext_t *c);
+void she_free_ciphertext_array(she_ciphertext_t** cs, unsigned int n);
 
 #endif
