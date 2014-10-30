@@ -227,7 +227,8 @@ class TestPIR(object):
 class TestCiphertextXOR(object):
 
     def setup(self):
-        self.ciphertexts = lib.she_allocate_ciphertext_array(4)
+        self.ciphertexts_size = 4
+        self.ciphertexts = lib.she_allocate_ciphertext_array(self.ciphertexts_size)
         self.l = 8
         self.sk = lib.she_generate_private_key(128, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
@@ -246,3 +247,6 @@ class TestCiphertextXOR(object):
         ctxt = lib.she_xor(self.pk, self.ciphertexts, self.n, self.size)
         ptxt = lib.she_decrypt(self.sk, ctxt)
         assert_equals(make_list_from_bit_array(ptxt), [0, 1, 1, 1, 1, 1, 1, 1])
+
+    def teardown(self):
+        lib.she_free_ciphertext_array(self.ciphertexts, self.ciphertexts_size)
