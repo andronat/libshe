@@ -82,7 +82,7 @@ class TestEncryption(object):
         lib.she_encrypt(self.pk, self.sk, self.data)
 
     def test_decryption(self):
-        for i in range(1000):
+        for i in range(100):
             ctxt = lib.she_encrypt(self.pk, self.sk, self.data)
             ptxt = lib.she_decrypt(self.sk, ctxt)
             assert_equals(self.raw, make_list_from_bit_array(ptxt))
@@ -222,3 +222,27 @@ class TestPIR(object):
             k = 3
             response = self.make_query(k)
             assert_equals(response, self.raw[k])
+
+
+class TestCiphertextXOR(object):
+
+    def setup(self):
+        self.ciphertexts = lib.she_allocate_ciphertext_array(4)
+        self.l = 8
+        self.sk = lib.she_generate_private_key(128, self.l)
+        self.pk = lib.she_generate_public_key(self.sk)
+        self.raw = [[0, 1, 0, 1, 1, 0, 1, 0],
+                    [1, 0, 0, 1, 0, 0, 0, 0],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [0, 0, 0, 0, 1, 0, 0, 0]]
+        self.n = len(self.raw)
+        self.size = 8
+
+        self.data = [lib.she_encrypt(self.pk, self.sk, make_bit_array(row)) for row in self.raw]
+
+    def test_xor_ciphertexts(self):
+        for i, row in enumerate(self.data):
+            lib.she_write_to_ciphertext_array(self.ciphertexts, i, row)
+        ctxt = lib.she_xor(self.pk, self.ciphertexts, self.n, self.size)
+        ptxt = lib.she_decrypt(self.sk, ctxt)
+        assert_equals(make_list_from_bit_array(ptxt), [0, 1, 1, 1, 1, 1, 1, 1])

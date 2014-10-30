@@ -26,7 +26,7 @@ char* she_serialize_ciphertext(struct she_ciphertext_t* c);
 she_ciphertext_t* she_deserialize_ciphertext(char* c);
 
 // operations
-struct she_ciphertext_t* she_xor(she_public_key_t* pk, she_ciphertext_t* cs, unsigned int n, unsigned m);
+struct she_ciphertext_t* she_xor(she_public_key_t* pk, she_ciphertext_t** cs, unsigned int n, unsigned m);
 struct she_ciphertext_t* she_sumprod(struct she_public_key_t* pk, struct she_ciphertext_t* a, BIT_ARRAY* b, unsigned int n, unsigned int l);
 struct she_ciphertext_t* she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_ARRAY* b, unsigned int n, unsigned int m);
 
@@ -34,5 +34,9 @@ struct she_ciphertext_t* she_dot(she_public_key_t* pk, she_ciphertext_t* g, BIT_
 struct she_ciphertext_t* she_encrypt(struct she_public_key_t* pk, struct she_private_key_t* sk, BIT_ARRAY* m);
 BIT_ARRAY* she_decrypt(struct she_private_key_t* sk, struct she_ciphertext_t* c);
 
+// ciphertext array
+struct she_ciphertext_t** she_allocate_ciphertext_array(unsigned int size);
+void she_write_to_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int i, struct she_ciphertext_t *c);
+void she_free_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int size);
 
 #endif

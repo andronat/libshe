@@ -242,7 +242,7 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
 //   n: number of ciphertexts
 //   m: size of ciphertexts
 she_ciphertext_t *
-she_xor(she_public_key_t* pk, she_ciphertext_t* cs,
+she_xor(she_public_key_t* pk, she_ciphertext_t** cs,
     unsigned int n, unsigned m)
 {
     if (!pk || !cs || n == 0 || m == 0) {
@@ -250,7 +250,7 @@ she_xor(she_public_key_t* pk, she_ciphertext_t* cs,
     }
 
     for (int i=0; i<n; ++i) {
-        if (cs[i].data.size() != m) {
+        if (cs[i]->data.size() != m) {
             return nullptr;
         }
      }
@@ -261,7 +261,7 @@ she_xor(she_public_key_t* pk, she_ciphertext_t* cs,
     for (int j=0; j<m; ++j) {
         mpz_class acc = 0;
         for (int i=0; i<n; ++i) {
-            acc += cs[i].data[j];
+            acc += cs[i]->data[j];
 
             // TODO: Optimize this. 5 was picked randomly in order for
             // mod division to not be performed every time, since division is
@@ -435,4 +435,24 @@ she_serialize_ciphertext(she_ciphertext_t *c) {
     strcpy(res, t.c_str());
 
     return res;
+}
+
+// ====================
+// ARRAY OF CIPHERTEXTS
+// ====================
+
+she_ciphertext_t** she_allocate_ciphertext_array(unsigned int size) {
+    return new she_ciphertext_t*[size];
+}
+
+void she_write_to_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int i, she_ciphertext_t *c) {
+    // TODO: check the size
+    ciphertexts[i] = c;
+}
+
+void she_free_ciphertext_array(she_ciphertext_t** ciphertexts, unsigned int size) {
+    for (int i=0; i<size; ++i) {
+        she_free_ciphertext(ciphertexts[i]);
+    }
+    ciphertexts = 0;
 }
