@@ -26,6 +26,13 @@ def make_bit_array(bits):
     lib.bit_array_set_bits(bar, len(indices), *indices)
     return bar
 
+# make she plaintext struct from 2d list
+def make_she_plaintext(chunk_size, bits):
+    plaintext = lib.she_make_plaintext(chunk_size)
+    for record in bits:
+        # record is a list of bits
+        lib.she_plaintext_append_bit_array(plaintext, make_bit_array(record))
+    return plaintext
 
 def make_list_from_bit_array(bit_array):
     n = lib.bit_array_length(bit_array)
@@ -88,28 +95,10 @@ class TestEncryption(object):
             assert_equals(self.raw, make_list_from_bit_array(ptxt))
 
 
-class TestXOR(object):
-
-    def setup(self):
-        self.sk = lib.she_generate_private_key(128, 8)
-        self.pk = lib.she_generate_public_key(self.sk)
-        self.raw = [[0, 1, 1, 1, 1, 0, 1, 0],
-                    [1, 0, 1, 0, 1, 1, 1, 1],
-                    [0, 1, 0, 0, 0, 1, 0, 0],
-                    [1, 0, 0, 1, 1, 0, 0, 1]]
-        self.n = len(self.raw)
-        self.size = 8
-        self.data = [lib.she_encrypt(self.pk, self.sk, make_bit_array(row))
-                     for row in self.raw]
-
-    @nottest
-    def test_xor1(self):
-        lib.she_xor(self.pk, self.data, self.n, self.size)
-
-
 class TestPIR(object):
 
     def setup(self):
+        # bit length of indices and data records at the same time
         self.l = 8
         self.sk = lib.she_generate_private_key(128, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
@@ -123,23 +112,24 @@ class TestPIR(object):
                     [1, 0, 1, 1, 1, 1, 0, 1],
                     [1, 0, 1, 1, 1, 1, 0, 1],
                     [0, 0, 0, 0, 1, 0, 0, 0]]
+        # number of records in the database
         self.n = len(self.raw)
         self.size = 8
-        self.data = make_bit_array(flatten(self.raw))
+        self.data = make_she_plaintext(self.l, self.raw)
 
-        self.indices = make_bit_array(
-            flatten([binary(i, size=self.l) for i in range(self.n)]))
+        self.indices = make_she_plaintext(self.l,
+            [binary(i, size=self.l) for i in range(self.n)])
 
     def make_gamma(self, i):
         plain_index = make_bit_array(binary(i, size=self.l))
         c = lib.she_encrypt(self.pk, self.sk, plain_index)
-        ctxt = lib.she_sumprod(self.pk, c, self.indices, self.n, self.l)
+        ctxt = lib.she_sumprod(self.pk, c, self.indices)
         return ctxt
 
     def make_query(self, i, gamma=None):
         if gamma is None:
             gamma = self.make_gamma(i)
-        ctxt = lib.she_dot(self.pk, gamma, self.data, self.n, self.l)
+        ctxt = lib.she_dot(self.pk, gamma, self.data)
         ptxt = lib.she_decrypt(self.sk, ctxt)
         return make_list_from_bit_array(ptxt)
 
@@ -227,8 +217,6 @@ class TestPIR(object):
 class TestCiphertextXOR(object):
 
     def setup(self):
-        self.ciphertexts_size = 4
-        self.ciphertexts = lib.she_allocate_ciphertext_array(self.ciphertexts_size)
         self.l = 8
         self.sk = lib.she_generate_private_key(128, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
@@ -238,6 +226,7 @@ class TestCiphertextXOR(object):
                     [0, 0, 0, 0, 1, 0, 0, 0]]
         self.n = len(self.raw)
         self.size = 8
+        self.ciphertexts = lib.she_allocate_ciphertext_array(self.n)
 
         self.data = [lib.she_encrypt(self.pk, self.sk, make_bit_array(row)) for row in self.raw]
 
@@ -249,4 +238,4 @@ class TestCiphertextXOR(object):
         assert_equals(make_list_from_bit_array(ptxt), [0, 1, 1, 1, 1, 1, 1, 1])
 
     def teardown(self):
-        lib.she_free_ciphertext_array(self.ciphertexts, self.ciphertexts_size)
+        lib.she_free_ciphertext_array(self.ciphertexts, self.n)
