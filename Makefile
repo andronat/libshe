@@ -15,6 +15,7 @@ BITARRLIB   := $(BITARR)/libbitarr.a
 
 SOURCES     := $(SRCDIR)/she.cpp
 OBJECTS     := $(BUILDDIR)/she.o
+HEADERS     := include/she.h
 
 TESTOBJECTS := $(BUILDDIR)/test.o
 CPPTESTS    := test/test_libshe.cpp
@@ -26,9 +27,9 @@ $(LIBTARGET): $(OBJECTS) $(BITARRLIB)
 	@mkdir -p $(BUILDDIR)
 	$(CXX) $(LIB) -shared $^ -o $(LIBTARGET)
 
-$(OBJECTS): $(SOURCES)
+$(OBJECTS): $(SOURCES) $(HEADERS)
 	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CFLAGS) $(INC) -c $^ -o $@
+	$(CXX) $(CFLAGS) $(INC) -c $(SOURCES) -o $@
 
 $(BITARRLIB):
 	$(MAKE) -C $(BITARR)
