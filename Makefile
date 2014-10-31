@@ -17,9 +17,6 @@ SOURCES     := $(SRCDIR)/she.cpp
 OBJECTS     := $(BUILDDIR)/she.o
 HEADERS     := include/she.h
 
-TESTOBJECTS := $(BUILDDIR)/test.o
-CPPTESTS    := test/test_libshe.cpp
-
 
 all: $(LIBTARGET)
 
@@ -37,14 +34,6 @@ $(BITARRLIB):
 clean:
 	@echo "Cleaning..."
 	$(RM) -r $(BUILDDIR)
-
-test: $(LIBTARGET) $(TESTOBJECTS)
-	$(CXX) $(CFLAGS) $(INC) $(LIB) -L$(BUILDDIR) $^ -o $(BUILDDIR)/tests
-	@$(TESTSTARGET)
-
-$(TESTOBJECTS): $(BITARRLIB) $(CPPTESTS)
-	@mkdir -p $(BUILDDIR)
-	$(CXX) $(CFLAGS) $(INC) -c $^ -o $@
 
 nosetests: $(LIBTARGET)
 	@nosetests .
