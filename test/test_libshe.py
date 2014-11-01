@@ -53,7 +53,7 @@ def test_bit_array_utils():
 def test_binary():
     assert_equals(binary(10, 8), [0, 0, 0, 0, 1, 0, 1, 0])
 
-
+@nottest
 class TestKeygen(object):
 
     def setup(self):
@@ -76,7 +76,7 @@ class TestKeygen(object):
     def test_bad_parameters2(self):
         assert_equals(self.generate_sk(0, 0), 0)
 
-
+@nottest
 class TestEncryption(object):
 
     def setup(self):
@@ -98,8 +98,8 @@ class TestEncryption(object):
 class TestPIR(object):
 
     def setup(self):
-        # bit length of indices and data records at the same time
-        self.l = 8
+        self.n_tests = 1
+        self.l = 20
         self.sk = lib.she_generate_private_key(60, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
         self.raw = [[0, 1, 0, 1, 1, 0, 1, 0],
@@ -111,8 +111,7 @@ class TestPIR(object):
                     [1, 0, 1, 1, 1, 1, 0, 1],
                     [1, 0, 1, 1, 1, 1, 0, 1],
                     [1, 0, 1, 1, 1, 1, 0, 1],
-                    [0, 0, 0, 0, 1, 0, 0, 0]]
-        # number of records in the database
+                    [0, 0, 0, 0, 1, 0, 0, 0]] * 1000
         self.n = len(self.raw)
         self.size = 8
         self.data = make_she_plaintext(self.size, self.raw)
@@ -133,6 +132,7 @@ class TestPIR(object):
         ptxt = lib.she_decrypt(self.sk, ctxt)
         return make_list_from_bit_array(ptxt)
 
+    @nottest
     def test_gamma0(self):
         k = 0
         gamma = self.make_gamma(k)
@@ -140,6 +140,7 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
+    @nottest
     def test_gamma1(self):
         k = 1
         gamma = self.make_gamma(k)
@@ -147,6 +148,7 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
+    @nottest
     def test_gamma2(self):
         k = 2
         gamma = self.make_gamma(k)
@@ -154,6 +156,7 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
+    @nottest
     def test_gamma3(self):
         k = 3
         gamma = self.make_gamma(k)
@@ -161,6 +164,7 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, self.n))
 
+    @nottest
     def test_query0(self):
         k = 0
         gamma = lib.she_encrypt(self.pk, self.sk,
@@ -168,6 +172,7 @@ class TestPIR(object):
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
+    @nottest
     def test_query1(self):
         k = 1
         gamma = lib.she_encrypt(self.pk, self.sk,
@@ -175,6 +180,7 @@ class TestPIR(object):
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
+    @nottest
     def test_query2(self):
         k = 2
         gamma = lib.she_encrypt(self.pk, self.sk,
@@ -182,6 +188,7 @@ class TestPIR(object):
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
+    @nottest
     def test_query3(self):
         k = 3
         gamma = lib.she_encrypt(self.pk, self.sk,
@@ -190,30 +197,30 @@ class TestPIR(object):
         assert_equals(response, self.raw[k])
 
     def test_full_query0(self):
-        for i in range(100):
+        for i in range(self.n_tests):
             k = 0
             response = self.make_query(k)
             assert_equals(response, self.raw[k])
 
     def test_full_query1(self):
-        for i in range(100):
+        for i in range(self.n_tests):
             k = 1
             response = self.make_query(k)
             assert_equals(response, self.raw[k])
 
     def test_full_query2(self):
-        for i in range(100):
+        for i in range(self.n_tests):
             k = 2
             response = self.make_query(k)
             assert_equals(response, self.raw[k])
 
     def test_full_query3(self):
-        for i in range(100):
+        for i in range(self.n_tests):
             k = 3
             response = self.make_query(k)
             assert_equals(response, self.raw[k])
 
-
+@nottest
 class TestCiphertextXOR(object):
 
     def setup(self):
