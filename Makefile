@@ -1,4 +1,4 @@
-CXX         := clang++
+#CXX         := clang++
 CFLAGS      := -g -Wall -fPIC --std=c++11 -O3
 
 BITARR      := lib/BitArray
