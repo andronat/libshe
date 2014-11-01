@@ -102,20 +102,10 @@ class TestPIR(object):
         self.l = 20
         self.sk = lib.she_generate_private_key(60, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
-        self.raw = [[0, 1, 0, 1, 1, 0, 1, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 1, 0, 1],
-                    [0, 0, 0, 0, 1, 0, 0, 0]] * 1000
-        self.n = len(self.raw)
-        self.size = 8
+        self.size = 1024 * 8
+        self.n = 100000
+        self.raw = [[1] * self.size] * self.n
         self.data = make_she_plaintext(self.size, self.raw)
-
         self.indices = make_she_plaintext(self.l,
             [binary(i, size=self.l) for i in range(self.n)])
 
@@ -132,7 +122,6 @@ class TestPIR(object):
         ptxt = lib.she_decrypt(self.sk, ctxt)
         return make_list_from_bit_array(ptxt)
 
-    @nottest
     def test_gamma0(self):
         k = 0
         gamma = self.make_gamma(k)
@@ -140,7 +129,6 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
-    @nottest
     def test_gamma1(self):
         k = 1
         gamma = self.make_gamma(k)
@@ -148,7 +136,6 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
-    @nottest
     def test_gamma2(self):
         k = 2
         gamma = self.make_gamma(k)
@@ -156,7 +143,6 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, size=self.n))
 
-    @nottest
     def test_gamma3(self):
         k = 3
         gamma = self.make_gamma(k)
@@ -164,7 +150,6 @@ class TestPIR(object):
             lib.she_decrypt(self.sk, gamma)),
             make_index_vector(k, self.n))
 
-    @nottest
     def test_query0(self):
         k = 0
         gamma = lib.she_encrypt(self.pk, self.sk,
@@ -172,7 +157,6 @@ class TestPIR(object):
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
-    @nottest
     def test_query1(self):
         k = 1
         gamma = lib.she_encrypt(self.pk, self.sk,
@@ -180,7 +164,6 @@ class TestPIR(object):
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
-    @nottest
     def test_query2(self):
         k = 2
         gamma = lib.she_encrypt(self.pk, self.sk,
@@ -188,7 +171,6 @@ class TestPIR(object):
         response = self.make_query(k, gamma)
         assert_equals(response, self.raw[k])
 
-    @nottest
     def test_query3(self):
         k = 3
         gamma = lib.she_encrypt(self.pk, self.sk,
