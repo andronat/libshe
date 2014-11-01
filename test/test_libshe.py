@@ -100,7 +100,7 @@ class TestPIR(object):
     def setup(self):
         # bit length of indices and data records at the same time
         self.l = 8
-        self.sk = lib.she_generate_private_key(128, self.l)
+        self.sk = lib.she_generate_private_key(60, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
         self.raw = [[0, 1, 0, 1, 1, 0, 1, 0],
                     [1, 0, 0, 0, 0, 0, 0, 1],
@@ -115,7 +115,7 @@ class TestPIR(object):
         # number of records in the database
         self.n = len(self.raw)
         self.size = 8
-        self.data = make_she_plaintext(self.l, self.raw)
+        self.data = make_she_plaintext(self.size, self.raw)
 
         self.indices = make_she_plaintext(self.l,
             [binary(i, size=self.l) for i in range(self.n)])
