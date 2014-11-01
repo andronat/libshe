@@ -3,14 +3,14 @@ extern "C" {
     #include "bit_array.h"
 }
 
-#include <iostream>
+
 #include <cassert>
 #include <random>
 #include <memory>
 #include <string>
 #include <sstream>
 
-#include <gmpxx.h>
+#include "gmpxx.h"
 
 using namespace std;
 
@@ -72,20 +72,18 @@ char she_plaintext_get_bit(she_plaintext_t* plaintext, unsigned int row, unsigne
 }
 
 void she_plaintext_append_bit_array(she_plaintext_t* plaintext, BIT_ARRAY* m) {
+    // TODO: check size of m to comply with chunk_size
     plaintext->data.push_back(bit_array_clone(m));
-    plaintext->chunk_size += m->num_of_bits;
 }
 
 void she_plaintext_update_bit_array(she_plaintext_t* plaintext, unsigned int row, BIT_ARRAY* m) {
-    plaintext->chunk_size -= plaintext->data[row]->num_of_bits;
-
+    // TODO: check size of m to comply with chunk_size
     bit_array_free(plaintext->data[row]);
     plaintext->data[row] = bit_array_clone(m);
-    plaintext->chunk_size += m->num_of_bits;
 }
 
 void she_free_plaintext(she_plaintext_t* plaintext) {
-    for (unsigned int i=0; i < plaintext->data.size(); ++i) {
+    for (int i=0; i < plaintext->data.size(); ++i) {
         bit_array_free(plaintext->data[i]);
     }
 }
@@ -225,7 +223,7 @@ she_encrypt(she_public_key_t* pk, she_private_key_t* sk, BIT_ARRAY* m)
 
     auto n = bit_array_length(m);
 
-    for (unsigned int i=0; i<n; ++i) {
+    for (int i=0; i<n; ++i) {
 
         // Chooses random q from [1, 2^gamma/p)
         mpz_class upper_bound;
@@ -261,7 +259,7 @@ she_decrypt(she_private_key_t* sk, she_ciphertext_t* c)
 
     auto res = bit_array_create(n);
 
-    for (unsigned int i=0; i<n; ++i) {
+    for (int i=0; i<n; ++i) {
         // Decrypts c[i]
         mpz_class t = c->data[i] % (*p) % 2;
         bit_array_assign_bit(res, i, t.get_si());
@@ -287,7 +285,7 @@ she_xor(she_public_key_t* pk, she_ciphertext_t** cs,
         return nullptr;
     }
 
-    for (unsigned int i=0; i<n; ++i) {
+    for (int i=0; i<n; ++i) {
         if (cs[i]->data.size() != m) {
             return nullptr;
         }
@@ -296,9 +294,9 @@ she_xor(she_public_key_t* pk, she_ciphertext_t** cs,
     auto x = pk->x;
 
     auto res = new she_ciphertext_t();
-    for (unsigned int j=0; j<m; ++j) {
+    for (int j=0; j<m; ++j) {
         mpz_class acc = 0;
-        for (unsigned int i=0; i<n; ++i) {
+        for (int i=0; i<n; ++i) {
             acc += cs[i]->data[j];
 
             // TODO: Optimize this. 5 was picked randomly in order for
@@ -328,27 +326,30 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_plaintext_t* b)
     {
         return nullptr;
     }
+
     auto x = pk->x;
 
     auto res = new she_ciphertext_t();
-    for (unsigned int i=0; i < b->data.size(); ++i) {
+
+    for (int i=0; i < b->data.size(); ++i) {
         mpz_class acc = 1;
-	for (unsigned int j=0; j < b->chunk_size; ++j) {
+        for (int j=0; j < b->chunk_size; ++j) {
             auto beta = she_plaintext_get_bit(b, i, j);
             acc *= (a->data[j] + beta + 1);
+
             // TODO: Optimize this. 3 was picked randomly in order for
             // mod division to not be performed every time, since division is
             // expensive...
             // ...but so is operations on larger numbers
             // Should depend on security parameter
-
-            if (j % 3 == 0 && (j != b->chunk_size - 1) ) {
+            if (i % 3 == 0) {
                 acc %= (*x);
             }
         }
         acc %= (*x);
         (res->data).push_back(acc);
     }
+
     return res;
 }
 
@@ -369,10 +370,10 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, she_plaintext_t* b)
 
     auto res = new she_ciphertext_t();
 
-    for (unsigned int j=0; j < b->chunk_size; ++j) {
+    for (int j=0; j < b->chunk_size; ++j) {
         mpz_class acc = 0;
         int c = 0;
-        for (unsigned int i=0; i < b->data.size(); ++i) {
+        for (int i=0; i < b->data.size(); ++i) {
             auto bit = she_plaintext_get_bit(b, i, j);
             if (bit) {
                 acc += g->data[i];
@@ -382,7 +383,7 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, she_plaintext_t* b)
                 // expensive...
                 // ...but so is operations on larger numbers
                 // Should depend on security parameter
-                if (c % 5 == 0 && (i != b->data.size() - 1)) {
+                if (c % 5 == 0) {
                     acc %= (*x);
                 }
             }
@@ -456,7 +457,7 @@ she_serialize_ciphertext(she_ciphertext_t *c) {
     }
 
     stringstream ss;
-    for (unsigned int i=0; i < (c->data.size()); ++i) {
+    for (int i=0; i < (c->data.size()); ++i) {
         ss << c->data[i].get_str(62) << '/';
     }
     auto t = ss.str();
@@ -480,7 +481,7 @@ void she_write_to_ciphertext_array(she_ciphertext_t** cs, unsigned int i, she_ci
 }
 
 void she_free_ciphertext_array(she_ciphertext_t** cs, unsigned int n) {
-    for (unsigned int i=0; i<n; ++i) {
+    for (int i=0; i<n; ++i) {
         she_free_ciphertext(cs[i]);
     }
     cs = 0;

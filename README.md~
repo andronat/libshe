@@ -1,0 +1,39 @@
+
+## Installation
+
+<<<<<<< Updated upstream
+![Build status](https://travis-ci.org/blindstore/libshe.svg?branch=master)
+
+```
+# Install GMP
+sudo apt-get install libgmp-dev
+
+# Install nose
+sudo pip install nose
+
+# Recursively clone the repo
+git clone --recursive git@github.com:blindstore/libshe.git`
+
+# Build the library
+cd libshe
+make
+
+# Run tests
+make nosetests
+```
+=======
+* clone repository recursively, because BitArray needs to be cloned as well: `git clone --recursive git@github.com:blindstore/libshe.git`
+* `make` to compile it
+* `make nosetests` to run tests of the library, they are done in Python, thus you need Nose installed
+
+
+## Pre-requirements
+* The GNU GMP library must be installed and included in your path. See: gmplib.org
+Make sure to configure it as:
+./configure --enable-cxx 
+before making and installing. 
+
+
+
+
+>>>>>>> Stashed changes
