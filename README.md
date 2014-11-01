@@ -1,21 +1,23 @@
+
 ## Installation
+    
+   # The GNU GMP library must be installed and included in your path. See: gmplib.org
+   # Make sure to configure it as:
+   ./configure --enable-cxx 
+   # before making and installing. 
 
-![Build status](https://travis-ci.org/blindstore/libshe.svg?branch=master)
+   # You can install GMP on Debian systems using:
+   sudo apt-get install libgmp-dev
 
-```
-# Install GMP
-sudo apt-get install libgmp-dev
+   # Install nose
+   sudo pip install nose
 
-# Install nose
-sudo pip install nose
+   # Recursively clone the repo
+   git clone --recursive git@github.com:blindstore/libshe.git`
 
-# Recursively clone the repo
-git clone --recursive git@github.com:blindstore/libshe.git`
+   # Build the library
+   cd libshe
+   make
 
-# Build the library
-cd libshe
-make
-
-# Run tests
-make nosetests
-```
+   # Run tests
+   make nosetests
