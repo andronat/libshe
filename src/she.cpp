@@ -3,7 +3,7 @@ extern "C" {
     #include "bit_array.h"
 }
 
-
+#include <iostream>
 #include <cassert>
 #include <random>
 #include <memory>
@@ -326,30 +326,27 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_plaintext_t* b)
     {
         return nullptr;
     }
-
     auto x = pk->x;
 
     auto res = new she_ciphertext_t();
-
     for (int i=0; i < b->data.size(); ++i) {
         mpz_class acc = 1;
-        for (int j=0; j < b->chunk_size; ++j) {
+	for (int j=0; j < b->chunk_size; ++j) {
             auto beta = she_plaintext_get_bit(b, i, j);
             acc *= (a->data[j] + beta + 1);
-
             // TODO: Optimize this. 3 was picked randomly in order for
             // mod division to not be performed every time, since division is
             // expensive...
             // ...but so is operations on larger numbers
             // Should depend on security parameter
-            if (i % 3 == 0) {
+
+            if (j % 3 == 0 && (j != b->chunk_size - 1) ) {
                 acc %= (*x);
             }
         }
         acc %= (*x);
         (res->data).push_back(acc);
     }
-
     return res;
 }
 
@@ -383,7 +380,7 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, she_plaintext_t* b)
                 // expensive...
                 // ...but so is operations on larger numbers
                 // Should depend on security parameter
-                if (c % 5 == 0) {
+                if (c % 5 == 0 && (i != b->data.size() - 1)) {
                     acc %= (*x);
                 }
             }
