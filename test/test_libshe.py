@@ -53,7 +53,7 @@ def test_bit_array_utils():
 def test_binary():
     assert_equals(binary(10, 8), [0, 0, 0, 0, 1, 0, 1, 0])
 
-@nottest
+
 class TestKeygen(object):
 
     def setup(self):
@@ -76,7 +76,7 @@ class TestKeygen(object):
     def test_bad_parameters2(self):
         assert_equals(self.generate_sk(0, 0), 0)
 
-@nottest
+
 class TestEncryption(object):
 
     def setup(self):
@@ -220,7 +220,7 @@ class TestPIR(object):
             response = self.make_query(k)
             assert_equals(response, self.raw[k])
 
-@nottest
+
 class TestCiphertextXOR(object):
 
     def setup(self):
