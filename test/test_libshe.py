@@ -53,6 +53,13 @@ def test_bit_array_utils():
 def test_binary():
     assert_equals(binary(10, 8), [0, 0, 0, 0, 1, 0, 1, 0])
 
+def test_make_she_plaintext():
+    a = [[1,0,0],[0,1,0],[0,0,1]]
+    m = make_she_plaintext(3, a)
+    for i, part in enumerate(a):
+        for j, bit in enumerate(part):
+            assert_equals(lib.she_plaintext_get_bit(m, i, j), bit)
+
 
 class TestKeygen(object):
 
@@ -207,6 +214,71 @@ class TestPIR(object):
             k = 3
             response = self.make_query(k)
             assert_equals(response, self.raw[k])
+
+
+class TestPIRThreaded(object):
+
+    def setup(self):
+        # bit length of indices and data records at the same time
+        self.l = 8
+        self.sk = lib.she_generate_private_key(128, self.l)
+        self.pk = lib.she_generate_public_key(self.sk)
+        # data, not splitted, used for comparing later
+        self.raw = [[0, 1, 0, 1, 1, 0, 1, 0],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 1, 0, 1],
+                    [0, 0, 0, 0, 1, 0, 1, 0]]
+        # number of records in the database
+        self.n = len(self.raw)
+        # database split into 3 parts
+        self.raw_split = [self.raw[0:3],
+                          self.raw[3:4],
+                          self.raw[4:7],
+                          self.raw[7:]]
+        self.number_of_parts = len(self.raw_split)
+        self.size = 8
+
+        self.data = []
+        self.indices = []
+        part_start_index = 0
+        for i, part in enumerate(self.raw_split):
+            self.data.append(make_she_plaintext(self.l, part))
+            # construct the indices
+            self.indices.append(make_she_plaintext(self.l, [binary(j, size=self.l) for j in range(part_start_index, part_start_index+len(part))]))
+            part_start_index += len(part)
+
+    def make_gamma_part(self, index, part_of_database):
+        plain_index = make_bit_array(binary(index, size=self.l))
+        c = lib.she_encrypt(self.pk, self.sk, plain_index)
+        ctxt = lib.she_sumprod(self.pk, c, self.indices[part_of_database])
+        return ctxt
+
+    def get_response_part(self, index, part_of_database):
+        gamma = self.make_gamma_part(index, part_of_database)
+        return lib.she_dot(self.pk, gamma, self.data[part_of_database])
+
+    def get_response(self, index):
+        responses = lib.she_allocate_ciphertext_array(self.number_of_parts)
+
+        # this loop should be put into seperate threads
+        for part_number in range(self.number_of_parts):
+            response = self.get_response_part(index, part_number)
+            lib.she_write_to_ciphertext_array(responses, part_number, response)
+
+        ctxt = lib.she_xor(self.pk, responses, self.number_of_parts, self.l)
+        return ctxt
+
+    def test_full_query(self):
+        for index in range(self.n):
+            ctxt = self.get_response(index)
+            ptxt = lib.she_decrypt(self.sk, ctxt)
+            assert_equals(make_list_from_bit_array(ptxt), self.raw[index])
 
 
 class TestCiphertextXOR(object):
