@@ -42,6 +42,7 @@ void she_free_ciphertext_array(she_ciphertext_t** cs, unsigned int n);
 
 // plaintext shard
 she_plaintext_t* she_make_plaintext(unsigned int chunk_size);
+char she_plaintext_get_bit(she_plaintext_t* plaintext, unsigned int row, unsigned int column);
 void she_plaintext_append_bit_array(she_plaintext_t* plaintext, BIT_ARRAY* m);
 void she_plaintext_update_bit_array(she_plaintext_t* plaintext, unsigned int row, BIT_ARRAY* m);
 void she_free_plaintext(she_plaintext_t* plaintext);
