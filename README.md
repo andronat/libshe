@@ -7,7 +7,7 @@
 sudo apt-get install libgmp-dev
 
 # Install nose
-sudo pip install nosetests
+sudo pip install nose
 
 # Recursively clone the repo
 git clone --recursive git@github.com:blindstore/libshe.git`
