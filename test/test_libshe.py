@@ -99,14 +99,20 @@ class TestPIR(object):
 
     def setup(self):
         self.n_tests = 1
-        self.l = 20
+        # Bit lengths of index
+        self.l = 20 
         self.sk = lib.she_generate_private_key(60, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
-        self.size = 1024 * 8
-        self.n = 100000
+        # Record size in bits
+        self.size = 1024 * 8 
+        # Number of records
+        self.n = 10  
+        # Database generation
         self.raw = [[1] * self.size] * self.n
-        self.data = make_she_plaintext(self.size, self.raw)
-        self.indices = make_she_plaintext(self.l,
+        # Required datastructure for libshe library
+        self.data = make_she_plaintext(self.size, self.raw) 
+        # Database index generation 
+        self.indices = make_she_plaintext(self.l, 
             [binary(i, size=self.l) for i in range(self.n)])
 
     def make_gamma(self, i):
