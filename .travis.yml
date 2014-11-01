@@ -3,6 +3,7 @@ compiler:
   - clang++
 before_install:
   - sudo apt-get install libgmp-dev g++
+  - sudo pip install nose
 env: 
   - CPATH=$(CPATH):/usr/include
 script:
