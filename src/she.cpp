@@ -1,8 +1,18 @@
+#ifndef BENCHMARK
+#define BENCHMARK 0
+#endif
+
+#if BENCHMARK == 1
+#include <time.h>
+#include <math.h>
+#include <string>
+#include <fstream>
+#endif
+
 extern "C" {
     #include "she.h"
     #include "bit_array.h"
 }
-
 #include <iostream>
 #include <cassert>
 #include <random>
@@ -328,27 +338,46 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_plaintext_t* b)
     {
         return nullptr;
     }
+#if BENCHMARK == 1
+    clock_t t;
+    ofstream file;
+    file.open ("benchmark/benchmark_sumprod.txt");
+    string tmp = ""; 
+#endif
     auto x = pk->x;
-
     auto res = new she_ciphertext_t();
     for (unsigned int i=0; i < b->data.size(); ++i) {
         mpz_class acc = 1;
 	for (unsigned int j=0; j < b->chunk_size; ++j) {
             auto beta = she_plaintext_get_bit(b, i, j);
+#if BENCHMARK == 1
+	    t = clock();
+#endif
             acc *= (a->data[j] + beta + 1);
+#if BENCHMARK == 1
+	    t = clock()-t;
+#endif
             // TODO: Optimize this. 3 was picked randomly in order for
             // mod division to not be performed every time, since division is
             // expensive...
             // ...but so is operations on larger numbers
             // Should depend on security parameter
-
-            if (j % 3 == 0 && (j != b->chunk_size - 1) ) {
+           
+	    /* if (j % 3 == 0 && (j != b->chunk_size - 1) ) {
                 acc %= (*x);
-            }
+            }*/
+#if BENCHMARK == 1
+	    tmp += (std::to_string(((float)t)/CLOCKS_PER_SEC)) + "\n";
+#endif
+	      
         }
         acc %= (*x);
         (res->data).push_back(acc);
     }
+#if BENCHMARK
+	file << tmp;
+	file.close();
+#endif
     return res;
 }
 

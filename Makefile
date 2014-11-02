@@ -1,5 +1,6 @@
-#CXX         := clang++
-CFLAGS      := -g -Wall -fPIC --std=c++11 -O3
+CXX         := clang++
+CFLAGS      := -g -Wall -fPIC --std=c++11 -O3  
+BFLAGS      := -DBENCHMARK
 
 BITARR      := lib/BitArray
 
@@ -10,11 +11,13 @@ SRCDIR      := src
 BUILDDIR    := build
 
 LIBTARGET   := $(BUILDDIR)/libshe.so
+BLIBTARGET  := $(BUILDDIR)/libshebenchmark.so
 TESTSTARGET := $(BUILDDIR)/tests
 BITARRLIB   := $(BITARR)/libbitarr.a
 
 SOURCES     := $(SRCDIR)/she.cpp
 OBJECTS     := $(BUILDDIR)/she.o
+BOBJECTS    := $(BUILDDIR)/shebenchmark.o
 HEADERS     := include/she.h
 
 
@@ -31,11 +34,24 @@ $(OBJECTS): $(SOURCES) $(HEADERS)
 $(BITARRLIB):
 	$(MAKE) -C $(BITARR)
 
-clean:
-	@echo "Cleaning..."
-	$(RM) -r $(BUILDDIR)
-
 nosetests: $(LIBTARGET)
 	@nosetests .
+
+cleanBenchmark:
+	$(RM) $(BLIBTARGET) $(BOBJECTS)
+	$(RM) benchmark/*.txt
+
+clean: cleanBenchmark
+	$(RM) -r $(BUILDDIR)
+
+benchmark: cleanBenchmark $(BLIBTARGET)
+
+$(BLIBTARGET): $(BOBJECTS) $(BITARRLIB)
+	@mkdir -p $(BUILDDIR)
+	$(CXX) $(LIB) -shared $^ -o $(BLIBTARGET)
+
+$(BOBJECTS): $(SOURCES) $(HEADERS)
+	@mkdir -p $(BUILDDIR)
+	$(CXX) $(CFLAGS) $(BFLAGS) $(INC) -c $(SOURCES) -o $@
 
 .PHONY: clean

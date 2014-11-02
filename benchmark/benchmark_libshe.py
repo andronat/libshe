@@ -4,7 +4,7 @@ from itertools import chain
 from nose.tools import *
 
 
-lib = ctypes.CDLL('build/libshe.so')
+lib = ctypes.CDLL('build/libshebenchmark.so')
 
 
 def binary(num, size=8):
