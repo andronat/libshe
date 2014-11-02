@@ -82,16 +82,14 @@ char she_plaintext_get_bit(she_plaintext_t* plaintext, unsigned int row, unsigne
 }
 
 void she_plaintext_append_bit_array(she_plaintext_t* plaintext, BIT_ARRAY* m) {
+    // TODO: check size of m to comply with chunk_size
     plaintext->data.push_back(bit_array_clone(m));
-    plaintext->chunk_size += m->num_of_bits;
 }
 
 void she_plaintext_update_bit_array(she_plaintext_t* plaintext, unsigned int row, BIT_ARRAY* m) {
-    plaintext->chunk_size -= plaintext->data[row]->num_of_bits;
-
+    // TODO: check size of m to comply with chunk_size
     bit_array_free(plaintext->data[row]);
     plaintext->data[row] = bit_array_clone(m);
-    plaintext->chunk_size += m->num_of_bits;
 }
 
 void she_free_plaintext(she_plaintext_t* plaintext) {
