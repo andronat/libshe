@@ -337,13 +337,16 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_plaintext_t* b)
         return nullptr;
     }
 #if BENCHMARK == 1
-    clock_t t;
+    clock_t t,t_total;
     ofstream file;
     file.open ("benchmark/benchmark_sumprod.txt");
     string tmp = ""; 
 #endif
     auto x = pk->x;
     auto res = new she_ciphertext_t();
+#if BENCHMARK == 1
+t_total = clock();
+#endif
     for (unsigned int i=0; i < b->data.size(); ++i) {
         mpz_class acc = 1;
 	for (unsigned int j=0; j < b->chunk_size; ++j) {
@@ -373,7 +376,8 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_plaintext_t* b)
         (res->data).push_back(acc);
     }
 #if BENCHMARK
-	file << tmp;
+        t_total = clock()-t_total;
+	file <<  (std::to_string(((float)t_total)/CLOCKS_PER_SEC)) +"\n" + tmp;
 	file.close();
 #endif
     return res;
