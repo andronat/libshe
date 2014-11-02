@@ -349,20 +349,30 @@ t_total = clock();
 #endif
     for (unsigned int i=0; i < b->data.size(); ++i) {
         mpz_class acc = 1;
+	mpz_class t_acc = acc;
+	mpz_class t_B;
 	for (unsigned int j=0; j < b->chunk_size; ++j) {
             auto beta = she_plaintext_get_bit(b, i, j);
 #if BENCHMARK == 1
 	    t = clock();
-#endif
-            acc *= (a->data[j] + beta + 1);
+#endif	    
+	    t_B = (a->data[j] + beta + 1);
+	    
+            if(t_acc > (*x)) 
+	    	t_acc %= (*x);
+	    if(t_B > (*x))
+		t_B %=  (*x);
+	    
+            t_acc = (t_acc * t_B)%(*x);
+            acc = t_acc;
 #if BENCHMARK == 1
 	    t = clock()-t;
 #endif
             // For multiplication in mpz_class benchmarks showed that 
 	    // taking modulation in each step is the best for performance.
-	    if (j != b->chunk_size - 1) { 
+	    /*if (j != b->chunk_size - 1) { 
                 acc %= (*x);
-            }
+            }*/
 #if BENCHMARK == 1
 	    tmp += (std::to_string(((float)t)/CLOCKS_PER_SEC)) + "\n";
 #endif

@@ -59,7 +59,7 @@ class TestPIR(object):
     def setup(self):
         self.n_tests = 1
         # Bit lengths of index (chunk size of index)
-        self.l = 50
+        self.l = 100
         self.sk = lib.she_generate_private_key(60, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
         # Record size in bits (chunk size of the data)
