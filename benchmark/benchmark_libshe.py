@@ -58,11 +58,11 @@ class TestPIR(object):
 
     def setup(self):
         self.n_tests = 1
-        # Bit lengths of index
-        self.l = 20 
+        # Bit lengths of index (chunk size of index)
+        self.l = 50
         self.sk = lib.she_generate_private_key(60, self.l)
         self.pk = lib.she_generate_public_key(self.sk)
-        # Record size in bits
+        # Record size in bits (chunk size of the data)
         self.size = 1024 * 8 
         # Number of records
         self.n = 10  

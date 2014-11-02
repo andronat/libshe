@@ -358,15 +358,11 @@ t_total = clock();
 #if BENCHMARK == 1
 	    t = clock()-t;
 #endif
-            // TODO: Optimize this. 3 was picked randomly in order for
-            // mod division to not be performed every time, since division is
-            // expensive...
-            // ...but so is operations on larger numbers
-            // Should depend on security parameter
-           
-	    /* if (j % 3 == 0 && (j != b->chunk_size - 1) ) {
+            // For multiplication in mpz_class benchmarks showed that 
+	    // taking modulation in each step is the best for performance.
+	    if (j != b->chunk_size - 1) { 
                 acc %= (*x);
-            }*/
+            }
 #if BENCHMARK == 1
 	    tmp += (std::to_string(((float)t)/CLOCKS_PER_SEC)) + "\n";
 #endif
