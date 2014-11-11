@@ -9,10 +9,6 @@
 #include <fstream>
 #endif
 
-extern "C" {
-    #include "she.h"
-    #include "bit_array.h"
-}
 #include <iostream>
 #include <cassert>
 #include <random>
@@ -21,6 +17,8 @@ extern "C" {
 #include <sstream>
 
 #include <gmpxx.h>
+
+#include "she.h"
 
 using namespace std;
 
@@ -65,37 +63,63 @@ mpz_class _random_odd_mpz_bits(unsigned int n) {
 // =========
 // PLAINTEXT
 // =========
-
-struct she_plaintext_t {
-    vector<BIT_ARRAY*> data;
-    unsigned int chunk_size;
-};
-
-she_plaintext_t* she_make_plaintext(unsigned int chunk_size) {
-    she_plaintext_t* plaintext = new she_plaintext_t;
-    plaintext->chunk_size = chunk_size;
-    return plaintext;
+PlainText::PlainText(): chunk_size(0) {
 }
 
-char she_plaintext_get_bit(she_plaintext_t* plaintext, unsigned int row, unsigned int column) {
-    return bit_array_get_bit(plaintext->data[row], column);
-}
-
-void she_plaintext_append_bit_array(she_plaintext_t* plaintext, BIT_ARRAY* m) {
-    // TODO: check size of m to comply with chunk_size
-    plaintext->data.push_back(bit_array_clone(m));
-}
-
-void she_plaintext_update_bit_array(she_plaintext_t* plaintext, unsigned int row, BIT_ARRAY* m) {
-    // TODO: check size of m to comply with chunk_size
-    bit_array_free(plaintext->data[row]);
-    plaintext->data[row] = bit_array_clone(m);
-}
-
-void she_free_plaintext(she_plaintext_t* plaintext) {
-    for (unsigned int i=0; i < plaintext->data.size(); ++i) {
-        bit_array_free(plaintext->data[i]);
+PlainText::PlainText(const vector<vector<int>> &indata) {
+    // For each row
+    for (int i=0; i<indata.size(); i++) {
+        // Create a bit_array with the length of the row
+        BIT_ARRAY* ba = bit_array_create(indata[i].size());
+        for (int g=0; g<indata[i].size(); g++) {
+            bit_array_assign_bit(ba, g, indata[i][g]);
+        }
+        this->data.push_back(ba);
+        this->chunk_size += ba->num_of_bits;
     }
+}
+
+PlainText::~PlainText() {
+    for (unsigned int i=0; i < this->data.size(); ++i) {
+        bit_array_free(this->data[i]);
+    }
+    // TODO: Do we really need this? Maybe smart-pointers?
+    this->data.clear();
+}
+
+BIT_ARRAY PlainText::operator [] (int row_index) const {
+    return *this->data[row_index];
+}
+
+// We return a ref so we can support (a += b) += c. It is a convention...
+PlainText& PlainText::operator += (const BIT_ARRAY* m) {
+    // TODO: We should not clone
+    // TODO: This can through bad_alloc
+    this->data.push_back(bit_array_clone(m));
+    this->chunk_size += m->num_of_bits;
+
+    return (*this);
+}
+
+void PlainText::update_bit_array(unsigned int row, BIT_ARRAY* m) {
+    this->chunk_size -= this->data[row]->num_of_bits;
+
+    bit_array_free(this->data[row]);
+    // TODO: We should not clone
+    this->data[row] = bit_array_clone(m);
+    this->chunk_size += m->num_of_bits;
+}
+
+char PlainText::get_bit(unsigned int row, unsigned int column) {
+    return bit_array_get_bit(this->data[row], column);
+}
+
+int PlainText::bit_size() const {
+    return this->chunk_size;
+}
+
+int PlainText::entry_count() const {
+    return this->data.size();
 }
 
 // ======
@@ -325,14 +349,14 @@ she_xor(she_public_key_t* pk, she_ciphertext_t** cs,
 }
 
 // Compute AND product of the sum of ciphertext `a` and each
-// negated plaintext row in `b`
+// negated plaintext row in `plntxt`
 //   pk: public key
-//   b: bit matrix flattened to bit array
+//   plntxt: bit matrix flattened to bit array
 she_ciphertext_t*
-she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_plaintext_t* b)
+she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, PlainText& plntxt)
 {
-    if (!pk || !a || !b || b->data.size() == 0 || b->chunk_size == 0 ||
-        a->data.size() < b->chunk_size)
+    if (!pk || !a || plntxt.bit_size() == 0 ||
+        a->data.size() < plntxt.entry_count())
     {
         return nullptr;
     }
@@ -340,43 +364,43 @@ she_sumprod(she_public_key_t* pk, she_ciphertext_t* a, she_plaintext_t* b)
     clock_t t,t_total;
     ofstream file;
     file.open ("benchmark/benchmark_sumprod.txt");
-    string tmp = ""; 
+    string tmp = "";
 #endif
     auto x = pk->x;
     auto res = new she_ciphertext_t();
 #if BENCHMARK == 1
 t_total = clock();
 #endif
-    for (unsigned int i=0; i < b->data.size(); ++i) {
+    for (unsigned int i=0; i < plntxt.entry_count(); ++i) {
         mpz_class acc = 1;
 	mpz_class t_acc = acc;
 	mpz_class t_B;
-	for (unsigned int j=0; j < b->chunk_size; ++j) {
-            auto beta = she_plaintext_get_bit(b, i, j);
+	for (unsigned int j=0; j < plntxt.bit_size(); ++j) {
+            auto beta = plntxt.get_bit(i, j);
 #if BENCHMARK == 1
 	    t = clock();
-#endif	    
+#endif
 	    t_B = (a->data[j] + beta + 1);
-	    
-            if(t_acc > (*x)) 
+
+            if(t_acc > (*x))
 	    	t_acc %= (*x);
 	    if(t_B > (*x))
 		t_B %=  (*x);
-	    
+
             t_acc = (t_acc * t_B)%(*x);
             acc = t_acc;
 #if BENCHMARK == 1
 	    t = clock()-t;
 #endif
-            // For multiplication in mpz_class benchmarks showed that 
+            // For multiplication in mpz_class benchmarks showed that
 	    // taking modulation in each step is the best for performance.
-	    /*if (j != b->chunk_size - 1) { 
+	    /*if (j != b->chunk_size - 1) {
                 acc %= (*x);
             }*/
 #if BENCHMARK == 1
 	    tmp += (std::to_string(((float)t)/CLOCKS_PER_SEC)) + "\n";
 #endif
-	      
+
         }
         acc %= (*x);
         (res->data).push_back(acc);
@@ -389,15 +413,15 @@ t_total = clock();
     return res;
 }
 
-// Compute dot product of `g` and each column of `b` matrix
+// Compute dot product of `g` and each column of `plntxt` matrix
 //   pk: public key
 //   g: ciphertext
-//   b: flattened to bit array bit matrix
+//   plntxt: flattened to bit array bit matrix
 she_ciphertext_t*
-she_dot(she_public_key_t* pk, she_ciphertext_t* g, she_plaintext_t* b)
+she_dot(she_public_key_t* pk, she_ciphertext_t* g, PlainText& plntxt)
 {
-    if (!pk || !g || !b || b->data.size() == 0 || b->chunk_size == 0 ||
-        g->data.size() < b->data.size())
+    if (!pk || !g || plntxt.bit_size() == 0 ||
+        g->data.size() < plntxt.entry_count())
     {
         return nullptr;
     }
@@ -406,11 +430,11 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, she_plaintext_t* b)
 
     auto res = new she_ciphertext_t();
 
-    for (unsigned int j=0; j < b->chunk_size; ++j) {
+    for (unsigned int j=0; j < plntxt.bit_size(); ++j) {
         mpz_class acc = 0;
         int c = 0;
-        for (unsigned int i=0; i < b->data.size(); ++i) {
-            auto bit = she_plaintext_get_bit(b, i, j);
+        for (unsigned int i=0; i < plntxt.entry_count(); ++i) {
+            auto bit = plntxt.get_bit(i, j);
             if (bit) {
                 acc += g->data[i];
                 ++c;
@@ -419,7 +443,7 @@ she_dot(she_public_key_t* pk, she_ciphertext_t* g, she_plaintext_t* b)
                 // expensive...
                 // ...but so is operations on larger numbers
                 // Should depend on security parameter
-                if (c % 5 == 0 && (i != b->data.size() - 1)) {
+                if (c % 5 == 0 && (i != plntxt.entry_count() - 1)) {
                     acc %= (*x);
                 }
             }
