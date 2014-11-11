@@ -1,5 +1,5 @@
 CXX         := clang++
-CFLAGS      := -g -Wall -fPIC --std=c++11 -O3  
+CFLAGS      := -g -Wall -fPIC --std=c++11 -O3
 BFLAGS      := -DBENCHMARK
 
 BITARR      := lib/BitArray
